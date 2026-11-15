@@ -32,16 +32,17 @@ AiiDA 的一切都建立在三层配置上，缺一层就跑不起来。理解�
 
 ```mermaid
 flowchart LR
-    subgraph 本地
-        P[profile<br/>数据库 + 仓库 + 消息代理]
+    subgraph local["本地"]
+        P["profile<br/>数据库 + 仓库 + 消息代理"]
     end
-    subgraph 集群
-        C[computer<br/>ssh 连接 + 调度器 SLURM]
-        K[code<br/>可执行文件路径]
+    subgraph cluster["集群"]
+        C["computer<br/>ssh 连接 + 调度器 SLURM"]
+        K["code<br/>可执行文件路径"]
     end
-    P --> C --> K
-    K --> J[一次计算 = CalcJob]
-    J --> W[工作流 = WorkChain]
+    P --> C
+    C --> K
+    K --> J["一次计算 = CalcJob"]
+    J --> W["工作流 = WorkChain"]
 ```
 
 | 层 | 回答的问题 | 常见配置项 | 出错时的典型症状 |
@@ -58,18 +59,18 @@ flowchart LR
 
 ```mermaid
 sequenceDiagram
-    participant 你
-    participant AiiDA
-    participant daemon
-    participant 集群
-    你->>AiiDA: submit(WorkChain, 输入)
-    AiiDA->>AiiDA: 存输入节点，建立进程节点
-    daemon->>集群: 生成提交脚本并 sbatch
-    集群-->>daemon: 作业运行中
-    daemon->>集群: 轮询状态
-    集群-->>daemon: 完成
-    daemon->>AiiDA: 取回文件（retrieved）+ 解析（parser）
-    AiiDA-->>你: 输出节点（能量、结构、misc）
+    participant U as 你
+    participant A as AiiDA
+    participant D as daemon
+    participant S as 集群
+    U->>A: submit(WorkChain, 输入)
+    A->>A: 存输入节点，建立进程节点
+    D->>S: 生成提交脚本并 sbatch
+    S-->>D: 作业运行中
+    D->>S: 轮询状态
+    S-->>D: 完成
+    D->>A: 取回文件（retrieved）+ 解析（parser）
+    A-->>U: 输出节点（能量、结构、misc）
 ```
 
 关键点：

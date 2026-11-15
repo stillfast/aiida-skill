@@ -29,6 +29,19 @@ values you read over the values written here.
 Read `SUMMARY.md` first: it is the one-page mental model (profile/computer/code
 → node graph → workflow layer → scripts layer → three-layer troubleshooting).
 
+The model in five lines:
+
+1. Three layers of configuration — **profile** (where data lives), **computer**
+   (where jobs run), **code** (what executable) — all one-off, all reusable.
+2. A calculation is a **node graph**: `submit()` only queues it; the **daemon**
+   runs it, retrieves files and parses outputs. Nodes are immutable.
+3. Two usage layers — **workflow** (which steps, what on failure: plugin
+   WorkChain or common-workflows interface) then **scripts** (batch submit and
+   analyse). Get the workflow right on one system before batching.
+4. Every process carries an **exit code defined by its plugin**; read it before
+   reading any source code.
+5. Failures resolve in order: **configuration → plugin → DFT code**.
+
 ## SOP
 
 1. **Probe the environment** (never skip):
