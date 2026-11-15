@@ -21,7 +21,10 @@ AiiDA 的安装与使用说明，写成「人读的教程 + agent 可加载的 s
 │   ├── 04-troubleshooting.md
 │   └── verdi-cheatsheet.md
 ├── install/                   # 可执行安装脚本（profile/computer/code/pseudo/doctor）
-├── examples/si-scf/           # 最小可跑例子：提交 + 分析
+│   └── config.env.yeesuan.example  # 真实集群（ABACUS+VASP+QE）的脱敏配置
+├── examples/
+│   ├── si-scf/                # 最小例子：单点 SCF（构建 → 校验 → 提交 → 分析）
+│   └── eos-scan/              # 两层例子：workflow.py（描述）→ submit.py / analyze.py
 ├── troubleshooting/           # exit code 表 + 结构化案例
 ├── versions.yaml              # 这套流程验证过的版本组合
 └── CHANGELOG.md / CONTRIBUTING.md
@@ -49,6 +52,15 @@ cd examples/si-scf
 python submit.py --dry-run     # 只构建并校验输入，不提交
 python submit.py               # 提交
 python analyze.py <pk>         # 读结果
+```
+
+完整的两层例子（先 workflow 再 scripts）：
+
+```bash
+cd examples/eos-scan
+python workflow.py --dry-run                              # 只描述计算，不提交
+python submit.py --code qe@mycluster --element U          # 提交 EOS 扫描
+python analyze.py <pk> --json eos.json                    # 读结果 + Birch-Murnaghan 拟合
 ```
 
 ## 维护

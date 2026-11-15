@@ -1,0 +1,37 @@
+id: 005-abacus-pseudo-family-naming
+title: "ABACUS pseudo family 'not installed' although the code runs with it"
+symptom: >
+  `aiida-pseudo list` does not show the family a working ABACUS preset uses
+  (e.g. `sg15_dzp`, `sg15_14ve_6p_dzp`), and the protocol path fails with
+  `ValueError: required pseudo family None is not installed` or
+  `Pseudo family <name> does not exist`.
+signature: 'required pseudo family .* is not installed|Pseudo family .* does not exist'
+affects:
+  aiida-core: "2.8.x"
+  aiida-abacus: "0.3.3"
+  aiida-pseudo: "1.7.x"
+fixed_in: null
+status: open
+diagnose:
+  - "aiida-pseudo list | grep -i <family>          # usually empty for ABACUS families"
+  - "python - <<'EOF' ... QueryBuilder().append(AtomicOrbitalFamily, project=['label']) ... EOF"
+  - "verdi plugin list aiida.workflows abacus.base   # is pseudo_family a str port?"
+root_cause: >
+  ABACUS families that bundle UPF + numerical orbitals are
+  `aiida_abacus.group.orb_group.AtomicOrbitalFamily` nodes, not `aiida-pseudo`
+  `pseudo.family*` groups: `aiida-pseudo list` only understands the latter, while
+  `abacus.base` resolves names through `get_pseudos_cutoff_via_family()`, which
+  checks `AtomicOrbitalFamily` first. Separately, `get_builder_from_protocol`
+  reads the family from the protocol inputs, so a name set only on the preset
+  does not reach the builder and comes out as `None`.
+fix: >
+  Inspect families with the ABACUS class
+  (`orm.QueryBuilder().append(AtomicOrbitalFamily, filters={'label': ...})`);
+  when using `get_builder_from_protocol`, pass the family explicitly:
+  `overrides={'pseudo_family': '<name>'}` (or `pseudo_family=` on the workchain
+  builder for the plain path). Keep `aiida-pseudo` for SSSP/pseudo-only
+  backends (QE, VASP).
+evidence:
+  workchain: null
+  calcjob: null
+links: []

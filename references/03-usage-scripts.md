@@ -97,6 +97,20 @@ verdi archive import results.aiida        # 在另一台机器复现
 
 归档是"可移交的溯源图"，比 CSV 更适合给合作者或投稿附件。
 
+## 4.4bis 本仓库的可运行例子
+
+`examples/eos-scan/` 把这一节的两层拆开演示：
+
+```bash
+python workflow.py --dry-run                    # 只构建 + 校验（打印真正生效的设置）
+python submit.py --code qe@mycluster --element U
+python analyze.py <pk> --json eos.json          # 读 structures/total_energies，拟合 BM
+```
+
+读结果时用 `node.base.links.get_outgoing(link_type=LinkType.RETURN).nested()`，
+输出是 `structures` / `total_energies` 两个嵌套命名空间（按同一 index 对应）；
+官方 CLI 也能直接画图：`aiida-common-workflows plot eos <pk>`。
+
 ## 4.5 scripts 层的一些原则
 
 - **只消费 outputs**，不修改节点；

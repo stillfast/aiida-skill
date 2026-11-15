@@ -1,0 +1,34 @@
+id: 004-vasprun-partial-columns
+title: "VASP parser crashes on vasprun.xml: broadcast (17,) into (10,)"
+symptom: >
+  A VASP run finishes, but parsing the retrieved vasprun.xml raises
+  `ValueError: could not broadcast input array from shape (17,) into shape (10,)`
+  inside parsevasp. The CalcJob exits non-zero although the calculation itself
+  completed and OUTCAR looks fine.
+signature: 'could not broadcast input array from shape \(\d+,\).*into shape \(\d+,\).*'
+affects:
+  aiida-core: "2.8.x"
+  aiida-vasp: "5.1.0"
+  parsevasp: "3.4.0"
+fixed_in: null
+status: open
+diagnose:
+  - "verdi process show <pk>   # the traceback points at parser, not VASP"
+  - "grep -n '<partial>' vasprun.xml | head   # number of columns in the partial block"
+  - "check whether the WorkChain requires the `dos` output (inspect_bands_dos)"
+root_cause: >
+  `parsevasp` reads the `<partial>` block assuming a fixed column count for the
+  occupied/empty band decomposition. Some VASP builds write a different number
+  of columns (17 vs the expected 10), and the array reshape fails. The root
+  issue is in the parser, not in the calculation: the same run is perfectly
+  parseable through a different route.
+fix: >
+  Work around it by taking the DOS from DOSCAR instead of vasprun
+  (`parsevasp.doscar.Doscar`) and requesting `ADDITIONAL_RETRIEVE_LIST: ["DOSCAR"]`;
+  for band/DOS WorkChains that insist on a `dos` output, patch
+  `inspect_bands_dos` to tolerate the missing output locally, and report the
+  column mismatch upstream with the offending vasprun.xml snippet.
+evidence:
+  workchain: null
+  calcjob: null
+links: []

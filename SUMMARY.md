@@ -111,6 +111,8 @@ verdi plugin list aiida.workflows vasp.v2.relax   # 看它需要哪些输入端�
 4-export/    整组结果打包归档
 ```
 
+本仓库里 `examples/eos-scan/` 就是最小的一对：`workflow.py` 只负责描述（结构 / 后端 / 协议 / 体积点数），`submit.py` 与 `analyze.py` 只负责提交和读结果——同一个 `make_builder()`，所以校验过的东西就是提交的东西。
+
 **scripts 层不关心计算怎么跑**，只调用 `submit()` 和读 `outputs`。所以：
 
 - 换代码、换参数 → 只改 workflow 的输入；
