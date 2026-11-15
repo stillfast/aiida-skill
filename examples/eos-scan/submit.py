@@ -7,8 +7,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
+from pathlib import Path
 
-from workflow import PROTOCOLS, STRUCTURES, make_builder, validate
+# import the sibling workflow module regardless of the current directory
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from workflow import PROTOCOLS, STRUCTURES, make_builder, validate  # noqa: E402
 
 
 def main() -> int:
