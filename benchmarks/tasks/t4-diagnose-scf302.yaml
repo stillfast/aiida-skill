@@ -1,0 +1,25 @@
+id: t4-diagnose-scf302
+title: "诊断：ABACUS 302，DRHO 在 0.03–0.45 间震荡"
+weight_total: 12
+checks:
+  - name: "302 = SCF 未收敛（跑满 scf_nmax）"
+    weight: 3
+    any:
+      - "302.*(SCF|电子步|收敛)"
+  - name: "看 DRHO 列判断电荷震荡"
+    weight: 2
+    any:
+      - "DRHO|drho"
+  - name: "给混合参数处方：broyden + 小 mixing_beta + ndim/gg0"
+    weight: 3
+    any:
+      - "mixing_beta"
+  - name: "提高 scf_nmax 或墙钟，并注意 301（被杀）"
+    weight: 2
+    any:
+      - "scf_nmax"
+      - "301|墙钟|wallclock|wall clock"
+  - name: "确认收敛后再报告能量"
+    weight: 2
+    any:
+      - "(确认|检查|verify).*(收敛|convergen)"

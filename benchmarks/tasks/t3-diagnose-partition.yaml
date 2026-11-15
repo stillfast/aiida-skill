@@ -1,0 +1,29 @@
+id: t3-diagnose-partition
+title: "诊断：提交 5 次失败后 paused，sbatch 报 No partition"
+weight_total: 12
+checks:
+  - name: "指出根因是子作业没有 queue_name / 分区"
+    weight: 3
+    any:
+      - "queue_name"
+      - "分区|partition"
+  - name: "指出 scheduler options 没有传到子 CalcJob"
+    weight: 3
+    any:
+      - "metadata\\.options"
+      - "options.*(没有|未|丢失|丢|没传|not).*(传|propagat|子|child)"
+  - name: "（进阶）指出 get_builder_restart / 动态命名空间会丢 options"
+    weight: 2
+    any:
+      - "get_builder_restart"
+      - "dynamic|动态命名空间|dynamic namespace"
+  - name: "处置：kill 后重提（并说明 play 拿不到新选项）"
+    weight: 2
+    any:
+      - "(kill|终止|停掉).*(重提|重新提交|resubmit|重新建)"
+      - "play.{0,20}(拿不到|不会|复用|无法).{0,20}(选项|脚本)"
+  - name: "不要直接改已存的节点"
+    weight: 2
+    any:
+      - "(不要|不能|不可|never).*(改|修改|edit).*(存|stored|数据库|节点)"
+      - "新建.{0,6}(计算|进程|节点).*(而不是|不是).*(修改|改)"

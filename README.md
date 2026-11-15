@@ -26,6 +26,8 @@ AiiDA 的安装与使用说明，写成「人读的教程 + agent 可加载的 s
 │   ├── si-scf/                # 最小例子：单点 SCF（构建 → 校验 → 提交 → 分析）
 │   └── eos-scan/              # 两层例子：workflow.py（描述）→ submit.py / analyze.py
 ├── troubleshooting/           # exit code 表 + 结构化案例
+├── benchmarks/                # skill 有效性 A/B 评测（rubric + 打分器 + 结果）
+│   └── results/pilot-2026-11-15.md
 ├── versions.yaml              # 这套流程验证过的版本组合
 └── CHANGELOG.md / CONTRIBUTING.md
 ```
@@ -61,6 +63,18 @@ cd examples/eos-scan
 python workflow.py --dry-run                              # 只描述计算，不提交
 python submit.py --code qe@mycluster --element U          # 提交 EOS 扫描
 python analyze.py <pk> --json eos.json                    # 读结果 + Birch-Murnaghan 拟合
+```
+
+## 这个 skill 到底有没有用
+
+`benchmarks/` 里有一套可复现的 A/B 评测（5 个任务、三组对照、rubric 打分）。
+最近一次 pilot：纯知识 0.62 / 允许查环境 0.89 / 加 skill 0.91——结论和局限都写在
+[`benchmarks/results/pilot-2026-11-15.md`](benchmarks/results/pilot-2026-11-15.md)。
+
+```bash
+python benchmarks/score.py --dir benchmarks/transcripts/skill
+python benchmarks/score.py --a benchmarks/transcripts/baseline_tools \
+    --b benchmarks/transcripts/skill --label-a tools --label-b skill
 ```
 
 ## 维护

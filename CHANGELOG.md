@@ -16,6 +16,24 @@ All notable changes to this repository (not to AiiDA itself).
 - DSH installation: the repository is symlinked to `$DSH_HOME/skills/aiida`, so
   the `aiida` skill is discovered automatically and reloads on `git pull`.
 
+## [0.2.1] - 2026-11-15
+
+### Added
+
+- `USAGE.md`: how to use the skill day to day (natural language, explicit
+  invocation, human reading), and how to know whether it helps.
+- `benchmarks/`: rubric-driven A/B harness (`tasks/`, `score.py`,
+  `transcripts/`, `results/pilot-2026-11-15.md`). Pilot: no-tools 0.620,
+  tools-only 0.887, tools+skill 0.907.
+
+## [0.2.0] - 2026-11-15
+
+### Added
+
+- `examples/eos-scan/`: two-layer example (workflow.py → submit.py / analyze.py).
+- `install/config.env.yeesuan.example`.
+- cases `004-vasprun-partial-columns`, `005-abacus-pseudo-family-naming`.
+
 ## [0.1.0] - 2026-11-15
 
 ### Added
