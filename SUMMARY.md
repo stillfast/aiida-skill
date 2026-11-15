@@ -149,8 +149,10 @@ verdi plugin list aiida.workflows vasp.v2.relax   # 看它需要哪些输入端�
 - **① 配置层**：症状是"根本没提交上去"或"连不上"。比如 `sbatch: No partition specified`（没给队列）、`Computer test` 失败、`Code not found`。先看 `verdi process report <pk>` 的异常栈，再看子作业的 `metadata.options` 是否为 `None`。
 - **② 插件层**：症状是"提交上去了，但插件自己抛异常/端口对不上/解析不到字段"。做法是**最小复现**（十行脚本 + 一个结构），然后对照上游仓库的 main 分支，确认是 bug 就开 issue 提 PR，附带复现脚本和回归测试。
 - **③ 代码层**：症状是"作业跑完了/被杀/报错，但 AiiDA 只是如实记录"。这时**看 exit code**：
-  - ABACUS：`301` 没跑完（墙钟/MPI/OOM）、`302` SCF 不收敛、`303` 离子步不收敛、`401` 重试耗尽；
-  - VASP：`700` 没跑完（常见 ZBRENT）、`501` 电子步问题等；
+  - ABACUS CalcJob：`301` 没跑完（墙钟/MPI/OOM）、`302` SCF 不收敛、`303` 离子步不收敛；
+    base WorkChain 的 `401` 是"重试次数耗尽"；
+  - VASP CalcJob：`700` 没跑完（常见 ZBRENT）、`701` 电子步未收敛、`702` 离子步未收敛；
+    WorkChain 的 `501` 是"需要人工改输入"；relax WorkChain 的 `601` 是"末步残余力上升"（警告）；
   - 调度器：`DUE TO TIME LIMIT`、`Signal 9`（OOM）。
   - 细节和真实案例见 `troubleshooting/exit-codes.md` 与 `troubleshooting/cases/`。
 
