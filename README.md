@@ -19,6 +19,8 @@ AiiDA 的安装与使用说明，写成「人读的教程 + agent 可加载的 s
 │   ├── 03-usage-workflow.md
 │   ├── 03-usage-scripts.md
 │   ├── 04-troubleshooting.md
+│   ├── 05-workchain-recipes.md      # 自己写 WorkChain 的骨架
+│   ├── 06-node-queries.md           # 读结果 / 排障查询手册
 │   └── verdi-cheatsheet.md
 ├── install/                   # 可执行安装脚本（profile/computer/code/pseudo/doctor）
 │   └── config.env.yeesuan.example  # 真实集群（ABACUS+VASP+QE）的脱敏配置

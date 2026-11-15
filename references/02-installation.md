@@ -60,6 +60,67 @@ verdi profile list
 verdi profile setdefault <name>     # 需要时可切换
 ```
 
+## 2.2bis 没有系统服务时：conda 自带 PostgreSQL + RabbitMQ
+
+笔记本 / 容器 / Windows 上没有 root 时，可以直接用 conda 包（这也是很多人的第一套环境）：
+
+```bash
+conda install -c conda-forge postgresql
+conda install -c conda-forge rabbitmq-server=3.8.3   # 版本要和 aiida-core 兼容，见 wiki
+
+# 初始化一个数据库目录（放在用户目录下）
+mkdir -p ~/data/aiida_profile/pgdata
+initdb -D ~/data/aiida_profile/pgdata
+
+# 用非默认端口起（5433 常用来避开系统里的 postgres）
+pg_ctl -D ~/data/aiida_profile/pgdata -o "-p 5433" -l ~/data/aiida_profile/pg.log start
+psql -h 127.0.0.1 -p 5433 -d postgres
+
+# psql 里建库建用户，并固定时区（AiiDA 的时间戳按库时区显示）
+CREATE USER aiida_user WITH PASSWORD 'change-me';
+CREATE DATABASE aiida_db OWNER aiida_user;
+ALTER DATABASE aiida_db SET timezone TO 'Asia/Shanghai';   -- 或 'Etc/GMT-8'
+GRANT ALL PRIVILEGES ON DATABASE aiida_db TO aiida_user;
+\l    -- 列库
+\du   -- 列用户
+\q
+
+rabbitmq-server -detached
+```
+
+profile 里把端口写成 5433：
+
+```bash
+verdi profile setup core.psql_dos -n \
+  --profile-name aiida --set-as-default \
+  --email you@example.com --first-name F --last-name L --institution INST \
+  --use-rabbitmq \
+  --database-username aiida_user --database-password change-me \
+  --database-name aiida_db --database-engine postgresql_psycopg \
+  --database-hostname 127.0.0.1 --database-port 5433 \
+  --repository-uri "file://$HOME/data/aiida_profile/repository"
+```
+
+**连接延迟**（多机/远程 DSN 时先测，别等 AiiDA 超时才发现网络不对）：
+
+```bash
+time psql -h 127.0.0.1 -p 5433 -U aiida_user -d aiida_db -c "\q"
+```
+
+**开机/激活即起**：把三条命令写进 conda 的 `activate.d`，`conda activate aiida` 时自动执行：
+
+```bash
+mkdir -p "$CONDA_PREFIX/etc/conda/activate.d"
+cat > "$CONDA_PREFIX/etc/conda/activate.d/aiida.sh" <<'SH'
+pg_ctl -D "$HOME/data/aiida_profile/pgdata" -l "$HOME/data/aiida_profile/pg.log" start 2>/dev/null || true
+rabbitmq-server -detached 2>/dev/null || true
+verdi daemon status >/dev/null 2>&1 || verdi daemon start 2>/dev/null || true
+SH
+```
+
+> 时区：库时区设成 `Asia/Shanghai`（或 `Etc/GMT-8`）后，`verdi process list` 的
+> ctime/mtime 才和本地一致；不改的话默认 UTC，容易把"晚了 8 小时"当成故障。
+
 ## 2.3 computer：提交到哪
 
 先确认 ssh 能通：

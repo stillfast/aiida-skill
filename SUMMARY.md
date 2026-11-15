@@ -134,6 +134,8 @@ verdi plugin list aiida.workflows vasp.v2.relax   # 看它需要哪些输入端�
 | 提交 | 构造 inputs 后 `submit()` | `examples/si-scf/submit.py` |
 | 盯进度 | 列表 / 状态 / 报告 | `verdi process list -a`、`verdi process status <pk>` |
 | 分析结果 | 读 outputs，拟合/画图 | `examples/si-scf/analyze.py` |
+| 自己写 WorkChain | outline / exit_code / ToContext / expose / 批量 | `references/05-workchain-recipes.md` |
+| 从节点捞数据、查上下游 | 状态属性 / links / QueryBuilder / retrieved | `references/06-node-queries.md` |
 | 出错了 | 三层排查（配置 / 插件 / 代码） | `references/04-troubleshooting.md` |
 | 上游插件有 bug | 最小复现 → issue → PR | `references/04-troubleshooting.md` |
 

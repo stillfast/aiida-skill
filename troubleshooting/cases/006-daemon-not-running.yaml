@@ -1,0 +1,34 @@
+id: 006-daemon-not-running
+title: "submit() returns but the process stays CREATED forever"
+symptom: >
+  After `submit(builder)` (or `aiida-uranium run`), `verdi process list` shows the
+  WorkChain as `created`, nothing is written to the remote work directory, and no
+  `_aiidasubmit.sh` appears. Later the same node may show as `waiting` with no
+  scheduler job.
+signature: 'process_state.*created|Waiting.*Monitoring scheduler: job state UNKNOWN'
+affects:
+  aiida-core: ">=2.6,<3"
+fixed_in: null
+status: open
+diagnose:
+  - "verdi status                       # the daemon line must be green"
+  - "verdi daemon status"
+  - "verdi daemon logshow               # broker connection errors show up here"
+  - "rabbitmqctl status                 # broker must be reachable"
+  - "verdi process list -a | grep created"
+root_cause: >
+  `submit()` only writes the process into the database and lets process control
+  pick it up. Without a running daemon (or with the broker down / the daemon
+  bound to another profile), nobody consumes the task, so the process never
+  starts. Nothing is "lost": the node is there and will start as soon as a
+  daemon picks it up.
+fix: >
+  Start the matching daemon (`verdi daemon start`, or `verdi -p <profile> daemon
+  start`). If it is already running, check the profile it serves, the broker
+  port and the daemon log. Then `verdi process play <pk>` or simply wait: a
+  `created` node is picked up automatically once the daemon is back.
+evidence:
+  workchain: null
+  calcjob: null
+links:
+  - "https://aiida.readthedocs.io/projects/aiida-core/en/stable/howto/run_codes.html"

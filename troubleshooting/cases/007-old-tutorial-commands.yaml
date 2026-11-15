@@ -1,0 +1,33 @@
+id: 007-old-tutorial-commands
+title: "Commands copied from a 1.x tutorial fail on 2.x"
+symptom: >
+  Following a blog post / notebook written for AiiDA 1.x, `verdi code setup`,
+  `verdi profile set-default`, `verdi calcjobs gotocomputer`, `%load_ext
+  aiida.ipython` or `create_archive(..., call_calc_backward=True)` raise
+  `No such command`, `unexpected keyword argument`, or `ModuleNotFoundError`.
+signature: 'No such command|unexpected keyword argument|No module named .aiida\.ipython'
+affects:
+  aiida-core: ">=2.0,<3"
+fixed_in: null
+status: open
+diagnose:
+  - "verdi <group> --help            # e.g. verdi code --help -> create, show, list"
+  - "python -c 'import inspect; from aiida.tools.archive import create_archive; print(inspect.signature(create_archive))'"
+  - "python -c 'from aiida.plugins import CalculationFactory; print(list(CalculationFactory(\"abacus.abacus\").spec().outputs))'"
+root_cause: >
+  AiiDA 2.x renamed several CLI groups and dropped 1.x-only options. Most
+  1.x tutorials also predate `get_builder()` defaults and the `core.psql_dos`
+  storage, so they mix two generations of API.
+fix: >
+  Translate the snippets: `verdi code setup` → `verdi code create
+  core.code.installed`; `verdi profile set-default` → `verdi profile
+  setdefault`; `verdi calcjobs` → `verdi calcjob`; IPython magic is
+  `%load_ext aiida` (the module is `aiida`, not `aiida.ipython`); archive
+  arguments follow the 2.x `create_archive` signature (`entities`, `filename`,
+  `overwrite`, `include_comments`, `include_logs`, `include_authinfos`).
+  Prefer `--help` of the installed version over any tutorial, and pin the
+  tutorial to a release in `versions.yaml`.
+evidence:
+  workchain: null
+  calcjob: null
+links: []

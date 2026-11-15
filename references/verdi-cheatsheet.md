@@ -78,3 +78,54 @@ from aiida.orm import load_node, load_code, StructureData, Dict, KpointsData, Li
 from aiida.plugins import WorkflowFactory, CalculationFactory
 from aiida.engine import submit, run_get_node
 ```
+
+## 2.x 与旧文档的命令差异（照着旧教程敲会报错）
+
+| 旧写法（1.x） | 现在（2.x） |
+|---|---|
+| `verdi code setup` | `verdi code create core.code.installed ...` |
+| `verdi profile set-default X` | `verdi profile setdefault X` |
+| `verdi calcjobs gotocomputer` | `verdi calcjob gotocomputer` |
+| `reentry scan` | 一般不需要（2.x 自动发现 entry points） |
+| `verdi computer setup`（交互式） | `verdi computer setup --non-interactive ...` |
+| `%load_ext aiida.ipython` | `%load_ext aiida`（模块名就是 `aiida`） |
+
+## 卡住 / 僵尸进程
+
+```bash
+verdi daemon stop
+verdi process repair          # 把 broker 里没有 task 的活跃进程标记为失败
+verdi daemon start
+```
+
+## 调试与日志
+
+```bash
+verdi daemon logshow
+verdi config set logging.aiida_loglevel DEBUG     # 对新进程生效
+verdi config unset logging.aiida_loglevel
+```
+
+## 缓存
+
+```bash
+verdi config set caching.default_enabled True     # 同输入的计算直接复用
+verdi process show <pk>                           # 看 cached_from
+```
+
+## Jupyter
+
+```python
+%load_ext aiida
+%verdi status
+%verdi process list -a
+%verdi process report <pk>
+```
+
+## 归档的 Python API（2.x 签名）
+
+```python
+from aiida.tools.archive import create_archive
+create_archive(entities=[node], filename="out.aiida", overwrite=True,
+               include_comments=True, include_logs=True)
+```

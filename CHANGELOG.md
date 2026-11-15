@@ -16,6 +16,24 @@ All notable changes to this repository (not to AiiDA itself).
 - DSH installation: the repository is symlinked to `$DSH_HOME/skills/aiida`, so
   the `aiida` skill is discovered automatically and reloads on `git pull`.
 
+## [0.3.0] - 2026-11-15
+
+### Added
+
+- `references/05-workchain-recipes.md`: writing a WorkChain (define/outline/
+  exit_code, submit + ToContext, expose/exposed, batch-in-a-WorkChain, restart,
+  `verdi process repair`).
+- `references/06-node-queries.md`: status flags, inputs/outputs, upstream and
+  downstream links, QueryBuilder by label/extras, retrieved files and
+  `copy_tree`, trajectory arrays, 2.x `create_archive` signature, debug logging,
+  `%load_ext aiida` + `%verdi` magics.
+- `references/02-installation.md`: conda-only PostgreSQL + RabbitMQ path
+  (`initdb`, port 5433, SQL, connection-latency test, `activate.d` auto-start,
+  timezone).
+- `references/verdi-cheatsheet.md`: 1.x → 2.x command table, `verdi process
+  repair`, logging config, caching, Jupyter magics.
+- cases `006-daemon-not-running`, `007-old-tutorial-commands`.
+
 ## [0.2.1] - 2026-11-15
 
 ### Added

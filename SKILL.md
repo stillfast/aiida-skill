@@ -101,6 +101,8 @@ The model in five lines:
 | `references/02-installation.md` | env → profile → computer → code → pseudo → daemon |
 | `references/03-usage-workflow.md` | plugin WorkChains and common-workflows interfaces |
 | `references/03-usage-scripts.md` | batch submission and analysis |
+| `references/05-workchain-recipes.md` | writing your own WorkChain: outline, exit codes, ToContext, expose, batch, restart |
+| `references/06-node-queries.md` | reading results and debugging: status flags, links, QueryBuilder, retrieved, archive, `%verdi` |
 | `references/04-troubleshooting.md` | three-layer diagnosis, exit-code table, upstream PRs |
 | `install/` | scripts derived from the references, runnable |
 | `examples/` | minimal runnable examples |
