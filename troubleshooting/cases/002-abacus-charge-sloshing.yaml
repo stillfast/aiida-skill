@@ -1,0 +1,35 @@
+id: 002-abacus-charge-sloshing
+title: "ABACUS SCF oscillation: DRHO stuck at 0.2-0.4, exit 302 then 301"
+symptom: >
+  A metallic (or 5f) system runs 50 electronic steps without reaching
+  self-consistency: DRHO oscillates between ~0.03 and ~0.45 instead of decaying.
+  The CalcJob exits 302 ("SCF did not reach self-consistency"); the retry with a
+  larger `scf_nmax` is then killed by the wall clock (exit 301) before it can
+  finish, and the WorkChain gives up (exit 300).
+signature: 'CONVERGENCE HAS NOT BEEN ACHIEVED'
+affects:
+  aiida-core: "2.8.x"
+  aiida-abacus: "0.3.3"
+fixed_in: null
+status: open
+diagnose:
+  - "verdi process show <pk>  # 302 then 301 is the classic signature"
+  - "grep -E 'GE[0-9]+|DRHO' running_scf.log | tail -20   # oscillating DRHO?"
+  - "compute cost: seconds per electronic step x scf_nmax vs max_wallclock_seconds"
+root_cause: >
+  Default charge mixing for ABACUS (`mixing_type=broyden`, `mixing_beta=0.8`,
+  `mixing_ndim=8`) is too aggressive for systems with slowly decaying density
+  response; the electronic loop enters a sloshing regime. On top of that the
+  wall clock only allows ~70-90 steps, so the WorkChain's own recovery
+  (increase scf_nmax, then lower mixing_beta) never gets a chance to run: the
+  job is killed instead of exiting 302, and the unpublished retry repeats the
+  identical inputs.
+fix: >
+  Set an explicit, damped mixing in the preset: `mixing_type: broyden`,
+  `mixing_beta: 0.2`, `mixing_ndim: 20-24`, `mixing_gg0: 1.5`, with
+  `scf_nmax: 100-250`. Give the SCF enough wall clock (measure one step first).
+  For retries, make sure a killed job (301) is not retried with identical inputs.
+evidence:
+  workchain: 564690
+  calcjob: 564954
+links: []

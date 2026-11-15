@@ -1,0 +1,38 @@
+id: 001-scheduler-options-lost
+title: "Resubmitted WorkChain loses queue/resources: sbatch 'No partition specified'"
+symptom: >
+  A WorkChain submitted from an existing node with `get_builder_restart()`
+  produces child CalcJobs without `queue_name`. Submission fails five times in
+  a row and the calculation is paused with
+  "Pausing after failed transport task: submit_calculation failed 5 times
+  consecutively".
+signature: 'sbatch: error: Batch job submission failed: No partition specified or system default partition'
+affects:
+  aiida-core: "2.8.x"
+  aiida-abacus: "0.3.3"
+  aiida-vasp: "5.1.0"
+fixed_in: null
+status: open
+diagnose:
+  - "verdi process report <paused-calcjob-pk>   # the sbatch stderr is in the traceback"
+  - "python -c \"from aiida.orm import load_node; print(load_node(<orig-pk>).get_builder_restart().base['abacus'])\""
+  - "compare with verdi process show <orig-pk>: is there a base__abacus__metadata input link?"
+  - "check the child CalcJob attributes: queue_name / resources"
+root_cause: >
+  Scheduler options were passed as `base.abacus.metadata.options`. `base` is a
+  *dynamic* PortNamespace of the WorkChain, so the nested `metadata` dict is
+  neither stored as an input link nor collected into `metadata_inputs`
+  (`_filter_serializable_metadata` only keeps declared metadata ports).
+  `get_builder_restart()` rebuilds inputs from links + `metadata_inputs`, so the
+  options disappear silently; the child CalcJob then uses AiiDA's defaults
+  (one MPI rank, no partition).
+fix: >
+  Put the same options on a *regular* input port (e.g. an `options` Dict) and
+  merge them into each child's `metadata.options` at submit time; also fail fast
+  when a scheduler-backed child has no `queue_name` instead of waiting for five
+  failed submissions.
+evidence:
+  workchain: 574443
+  calcjob: 574627
+links:
+  - "https://aiida.readthedocs.io/projects/aiida-core/en/latest/topics/processes/concepts.html"

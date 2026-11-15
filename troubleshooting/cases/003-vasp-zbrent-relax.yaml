@@ -1,0 +1,32 @@
+id: 003-vasp-zbrent-relax
+title: "VASP relaxation dies with ZBRENT: fatal error in bracketing (exit 700)"
+symptom: >
+  A volume/cell relaxation with ISIF=5/6/7 aborts with
+  "ZBRENT: fatal error in bracketing" at some ionic step. aiida-vasp reports
+  exit 700 ("Calculation did not reach the end of execution") and the
+  `VaspWorkChain` restarts from CONTCAR, replaying the same failure up to
+  `max_iterations` times.
+signature: 'ZBRENT: fatal error in bracketing'
+affects:
+  aiida-core: "2.8.x"
+  aiida-vasp: "5.1.0"
+fixed_in: null
+status: open
+diagnose:
+  - "verdi process show <pk>  # 700 in the CalcJob, 502 in VaspWorkChain"
+  - "grep -n 'ZBRENT' OUTCAR"
+  - "check ISIF: 5/6/7 use the 1-D Brent line search"
+root_cause: >
+  ISIF=5/6/7 relax the cell through VASP's one-dimensional Brent line search.
+  On a noisy energy-volume curve (metal + coarse k-mesh, or a smearing that is
+  too small) the bracketing fails and VASP aborts. Restarting from CONTCAR does
+  not change the landscape, so the failure repeats.
+fix: >
+  Use ISIF=3 (CG/RMM-DIIS ionic optimizer, no Brent) for full cell relaxation,
+  and/or stabilize the electronic structure (ISMEAR=-5 for insulators, larger
+  sigma, tighter EDIFF). Verify the k-mesh is dense enough for the cell sizes
+  scanned.
+evidence:
+  workchain: 522755
+  calcjob: null
+links: []

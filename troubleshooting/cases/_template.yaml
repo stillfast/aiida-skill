@@ -1,0 +1,28 @@
+# Copy to NNN-<slug>.yaml and fill in. Keep every field; use null when unknown.
+id: NNN-slug
+title: "one line, searchable"
+# What the user sees / the exact symptom in the terminal or log.
+symptom: >
+  ...
+# Regex matched against log text by a future `aiida-skill diagnose` helper.
+signature: '...'
+# Which package versions are affected; `fixed-in` when a later release fixed it.
+affects:
+  aiida-core: ">=2.6,<3"
+  aiida-abacus: null
+fixed_in: null
+# open | fixed-upstream | obsolete
+status: open
+# Ordered checks, cheapest first.
+diagnose:
+  - "verdi process show <pk>"
+  - "..."
+root_cause: >
+  ...
+fix: >
+  ...
+# Real nodes that demonstrate the failure (they make the case re-verifiable).
+evidence:
+  workchain: null
+  calcjob: null
+links: []

@@ -1,0 +1,63 @@
+# Versions this repository has been verified against.
+#
+# `supported`  = tested end-to-end, commands in references/ work as written
+# `minimum`    = oldest version the documented commands still work on
+# `latest_known` = newest release seen upstream when this file was updated
+#
+# install/06-doctor.py reads this file and classifies the current environment:
+#   supported | newer-than-tested | unsupported
+#
+# When bumping: change the numbers here, add a CHANGELOG entry, and re-run the
+# drift workflow (`.github/workflows/drift.yml`) or locally:
+#   python install/06-doctor.py --strict
+
+updated: 2026-11-15
+
+python:
+  supported: "3.10"
+  minimum: "3.9"
+
+aiida-core:
+  supported: "2.8.0"
+  minimum: "2.6.0"
+  latest_known: "2.8.0"
+
+plugins:
+  aiida-abacus:
+    supported: "0.3.3"
+    minimum: "0.3.0"
+    latest_known: "0.3.3"
+  aiida-vasp:
+    supported: "5.1.0"
+    minimum: "5.0.0"
+    latest_known: "5.1.0"
+  aiida-quantumespresso:
+    supported: "5.0.0"
+    minimum: "4.5.0"
+    latest_known: "5.0.0"
+  aiida-fleur:
+    supported: "2.0.0"
+    minimum: "1.2.0"
+    latest_known: "2.0.0"
+  aiida-common-workflows:
+    supported: "1.0.1"
+    minimum: "1.0.0"
+    latest_known: "1.0.1"
+  aiida-pseudo:
+    supported: "1.7.2"
+    minimum: "1.4.0"
+    latest_known: "1.7.2"
+
+# Verification scripts of the "scripts layer" (see references/03-usage-scripts.md)
+verification_scripts:
+  # Pinned to aiida-core 1.x by upstream; reuse the *pattern*, not the code.
+  acwf-verification-scripts:
+    upstream: "aiidateam/acwf-verification-scripts"
+    note: "pins aiida-core==1.6; port the pattern to 2.x instead of installing as-is"
+
+# Backends this repository documents end to end
+backends:
+  - abacus
+  - vasp
+  - qe
+  - fleur
