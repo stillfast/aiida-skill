@@ -1,25 +1,25 @@
 id: t1-config-layers
-title: "profile / computer / code 是什么关系，daemon 干什么"
+title: "How profile, computer and code relate, and what the daemon does"
 weight_total: 10
 checks:
-  - name: "profile = 数据在哪（数据库 + 文件仓库）"
+  - name: "profile = where the data lives (database + file repository)"
     weight: 2
     any:
       - "profile.*(数据库|database|存储|仓库|repository|SQLite|PostgreSQL|postgres)"
-  - name: "computer = 作业提交到哪台机器（ssh + 调度器）"
+  - name: "computer = which machine jobs go to (ssh + scheduler)"
     weight: 2
     any:
       - "computer.*(集群|机器|主机|ssh|SLURM|slurm|调度|scheduler)"
-  - name: "code = 具体可执行文件（绝对路径 + 插件）"
+  - name: "code = the executable itself (absolute path + plugin)"
     weight: 2
     any:
       - "code.*(可执行|executable|路径|filepath|二进制|程序)"
-  - name: "submit 与执行分离，daemon 负责真正运行/轮询"
+  - name: "submit is separate from execution: the daemon runs and polls"
     weight: 2
     any:
       - "daemon.*(运行|执行|轮询|后台|worker|poll)"
       - "submit.*(只|排队|写入|queue).*(daemon|守护)"
-  - name: "节点不可变 / 溯源（provenance）"
+  - name: "immutable nodes / provenance"
     weight: 2
     any:
       - "(不可变|immutable|溯源|追溯|provenance|图|graph)"

@@ -3,23 +3,23 @@ verified: 2026-11
 applies_to: "aiida-core>=2.6,<3"
 ---
 
-# 3B. 使用（二）：再写 scripts
+# 3B. Usage (2): then write scripts
 
-workflow 跑通一次之后，scripts 层负责**成批地跑**和**把结果变成表/图**。
-分层参考 `acwf-verification-scripts`（`aiidateam/acwf-verification-scripts`）：
+Once the workflow has run through once, the scripts layer is responsible for **running in batches** and **turning results into tables/plots**.
+For the layering, see `acwf-verification-scripts` (`aiidateam/acwf-verification-scripts`):
 
 ```
-2-submit/    批量提交（SubmissionController）
-3-analyze/   提取 → 拟合 → 出图/JSON
-4-export/    归档（AiiDA archive）
+2-submit/    batch submission (SubmissionController)
+3-analyze/   extract → fit → plots/JSON
+4-export/    archive (AiiDA archive)
 ```
 
-> 注意：上游那套脚本 pin 的是 `aiida-core==1.6`。**借用它的结构，不要直接装它。**
+> Note: that upstream set of scripts pins `aiida-core==1.6`. **Borrow its structure; do not install it directly.**
 
-## 4.1 批量提交：SubmissionController
+## 4.1 Batch submission: SubmissionController
 
-核心是把"每个任务"描述成一个可去重的键（extras），控制器负责并发上限、
-断点续跑、去重：
+The core idea is to describe "each task" as a deduplicable key (extras); the controller handles the concurrency limit,
+resume after interruption, and deduplication:
 
 ```python
 from aiida import orm
@@ -33,7 +33,7 @@ class EosSubmission(FromGroupSubmissionController):
         self._code = orm.load_code(code_label)
 
     def get_extra_unique_keys(self):
-        return ('element', 'configuration')      # 每个任务的唯一键
+        return ('element', 'configuration')      # unique key of each task
 
     def get_inputs_and_processclass_from_extras(self, extras_values):
         structure = self.get_parent_node_from_extras(extras_values)
@@ -51,12 +51,12 @@ controller = EosSubmission(
 controller.submit_new_batch(verbose=True)
 ```
 
-自己写一个 for 循环也能提交，但要自己处理：并发、失败重试、重复提交、
-中断后续跑。任务超过 10 个时，用控制器。
+Writing your own for loop can also submit, but you must handle: concurrency, retries on failure, duplicate submission, and
+resuming after interruption. Use the controller once there are more than 10 tasks.
 
-## 4.2 结果提取
+## 4.2 Result extraction
 
-只读 outputs，不碰数据库内部：
+Read outputs only; never touch the database internals:
 
 ```python
 from aiida.orm import load_node
@@ -72,9 +72,9 @@ for pk in pks:
                  'volume': n.outputs.structure.get_cell_volume()})
 ```
 
-统一成 `pandas.DataFrame` → CSV/JSON，后面拟合和画图都基于它。
+Normalize everything into a `pandas.DataFrame` → CSV/JSON; fitting and plotting afterwards are all based on it.
 
-## 4.3 分析：EOS 拟合示例
+## 4.3 Analysis: EOS fitting example
 
 ```python
 import numpy as np
@@ -88,33 +88,33 @@ def birch_murnaghan(V, E0, V0, B0, Bp):
 popt, _ = curve_fit(birch_murnaghan, data.volume, data.energy, p0=[data.energy.min(), data.volume.min(), 0.5, 4])
 ```
 
-## 4.4 导出与归档
+## 4.4 Export and archiving
 
 ```bash
 verdi archive create results.aiida --groups <group-label>
-verdi archive import results.aiida        # 在另一台机器复现
+verdi archive import results.aiida        # reproduce on another machine
 ```
 
-归档是"可移交的溯源图"，比 CSV 更适合给合作者或投稿附件。
+An archive is a "transferable provenance graph", better suited than CSV for handing to collaborators or attaching to a submission.
 
-## 4.4bis 本仓库的可运行例子
+## 4.4bis Runnable examples in this repository
 
-`examples/eos-scan/` 把这一节的两层拆开演示：
+`examples/eos-scan/` demonstrates the two layers of this section separately:
 
 ```bash
-python workflow.py --dry-run                    # 只构建 + 校验（打印真正生效的设置）
+python workflow.py --dry-run                    # build + validate only (print the settings that actually take effect)
 python submit.py --code qe@mycluster --element U
-python analyze.py <pk> --json eos.json          # 读 structures/total_energies，拟合 BM
+python analyze.py <pk> --json eos.json          # read structures/total_energies and fit BM
 ```
 
-读结果时用 `node.base.links.get_outgoing(link_type=LinkType.RETURN).nested()`，
-输出是 `structures` / `total_energies` 两个嵌套命名空间（按同一 index 对应）；
-官方 CLI 也能直接画图：`aiida-common-workflows plot eos <pk>`。
+When reading results use `node.base.links.get_outgoing(link_type=LinkType.RETURN).nested()`;
+the output holds two nested namespaces, `structures` / `total_energies` (matched by the same index);
+the official CLI can also plot directly: `aiida-common-workflows plot eos <pk>`.
 
-## 4.5 scripts 层的一些原则
+## 4.5 Some principles for the scripts layer
 
-- **只消费 outputs**，不修改节点；
-- 每个脚本有 `--dry-run` / `--limit`，大批量前先小批量验证；
-- 失败要**分类记录**（exit code + pk），而不是 `except: pass`；
-- 分析脚本要能在"部分失败"的数据上跑（跳过失败项并报告数量）；
-- 所有中间结果落 CSV/JSON，图从数据重新生成，保证可复现。
+- **Consume outputs only**; do not modify nodes;
+- every script has `--dry-run` / `--limit`; validate on a small batch before a large one;
+- record failures **by category** (exit code + pk) rather than with `except: pass`;
+- analysis scripts must be able to run on "partially failed" data (skip the failed entries and report how many);
+- all intermediate results land in CSV/JSON, and figures are regenerated from the data so everything stays reproducible.

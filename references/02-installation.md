@@ -3,15 +3,15 @@ verified: 2026-11
 applies_to: "aiida-core>=2.6,<3"
 ---
 
-# 2. 安装与配置
+# 2. Installation and Configuration
 
-三步配置：**profile → computer → code**，最后装赝势并启动 daemon。
-所有命令都能在 `install/` 里找到对应脚本，参数集中在 `install/config.env`。
+Three-step setup: **profile → computer → code**, then install pseudopotentials and start the daemon.
+Every command has a corresponding script under `install/`, and the parameters are centralized in `install/config.env`.
 
-> 参考实现：`scripts/aiida/aiida-config/teaching/teaching.ipynb`（原版教程）、
-> `aiida-ubuntu-quickstart`（一键脚本）。本仓库把它们参数化。
+> Reference implementations: `scripts/aiida/aiida-config/teaching/teaching.ipynb` (original tutorial),
+> `aiida-ubuntu-quickstart` (one-click script). This repository parameterizes them.
 
-## 2.1 环境
+## 2.1 Environment
 
 ```bash
 conda create -n aiida python=3.10 -y
@@ -21,26 +21,26 @@ pip install aiida-abacus aiida-vasp aiida-quantumespresso aiida-fleur
 pip install aiida-common-workflows aiida-pseudo aiida-submission-controller
 ```
 
-可加 `aiida-phonopy`、`ase`、`pymatgen`。检查入口点：
+You may add `aiida-phonopy`, `ase`, `pymatgen`. Check the entry points:
 
 ```bash
-verdi status          # 此时还没有 profile，会提示创建
-reentry scan -r aiida # 旧版需要；2.x 一般不必
+verdi status          # no profile yet at this point; it will prompt you to create one
+reentry scan -r aiida # needed for older versions; generally unnecessary on 2.x
 ```
 
-## 2.2 profile：数据存哪
+## 2.2 profile: where the data lives
 
-两种后端：
+Two backends:
 
 ```bash
-# A. SQLite + zmq（单机、零依赖，适合练手/教学）
+# A. SQLite + zmq (single machine, zero dependencies, good for practice/teaching)
 verdi profile setup core.sqlite_dos -n \
   -p profile_<name> --no-set-as-default \
   --email you@example.com --first-name <first> --last-name <last> \
   --institution <inst> --broker zmq \
   --filepath "$HOME/data/aiida_profile/profile_<name>"
 
-# B. PostgreSQL + RabbitMQ（生产）
+# B. PostgreSQL + RabbitMQ (production)
 verdi profile setup core.psql_dos -n \
   --profile-name <name> --set-as-default \
   --email you@example.com --first-name <first> --last-name <last> \
@@ -51,44 +51,44 @@ verdi profile setup core.psql_dos -n \
   --repository-uri "file:///path/to/repository"
 ```
 
-启动消息代理（psql 后端必须有 RabbitMQ）：
+Start the message broker (the psql backend requires RabbitMQ):
 
 ```bash
-# conda 环境里的 rabbitmq-server 可直接用，或系统服务
+# rabbitmq-server in the conda environment can be used directly, or use the system service
 rabbitmq-server -detached
 verdi profile list
-verdi profile setdefault <name>     # 需要时可切换
+verdi profile setdefault <name>     # switch when needed
 ```
 
-## 2.2bis 没有系统服务时：conda 自带 PostgreSQL + RabbitMQ
+## 2.2bis When there is no system service: conda's own PostgreSQL + RabbitMQ
 
-笔记本 / 容器 / Windows 上没有 root 时，可以直接用 conda 包（这也是很多人的第一套环境）：
+On a laptop / container / Windows without root, you can use the conda packages directly (this is also many people's first environment):
 
 ```bash
 conda install -c conda-forge postgresql
-conda install -c conda-forge rabbitmq-server=3.8.3   # 版本要和 aiida-core 兼容，见 wiki
+conda install -c conda-forge rabbitmq-server=3.8.3   # version must be compatible with aiida-core, see wiki
 
-# 初始化一个数据库目录（放在用户目录下）
+# initialize a database directory (under the user home)
 mkdir -p ~/data/aiida_profile/pgdata
 initdb -D ~/data/aiida_profile/pgdata
 
-# 用非默认端口起（5433 常用来避开系统里的 postgres）
+# start on a non-default port (5433 is often used to avoid the system postgres)
 pg_ctl -D ~/data/aiida_profile/pgdata -o "-p 5433" -l ~/data/aiida_profile/pg.log start
 psql -h 127.0.0.1 -p 5433 -d postgres
 
-# psql 里建库建用户，并固定时区（AiiDA 的时间戳按库时区显示）
+# in psql, create the database and user, and pin the time zone (AiiDA timestamps are displayed in the database time zone)
 CREATE USER aiida_user WITH PASSWORD 'change-me';
 CREATE DATABASE aiida_db OWNER aiida_user;
-ALTER DATABASE aiida_db SET timezone TO 'Asia/Shanghai';   -- 或 'Etc/GMT-8'
+ALTER DATABASE aiida_db SET timezone TO 'Asia/Shanghai';   -- or 'Etc/GMT-8'
 GRANT ALL PRIVILEGES ON DATABASE aiida_db TO aiida_user;
-\l    -- 列库
-\du   -- 列用户
+\l    -- list databases
+\du   -- list users
 \q
 
 rabbitmq-server -detached
 ```
 
-profile 里把端口写成 5433：
+In the profile, write the port as 5433:
 
 ```bash
 verdi profile setup core.psql_dos -n \
@@ -101,13 +101,13 @@ verdi profile setup core.psql_dos -n \
   --repository-uri "file://$HOME/data/aiida_profile/repository"
 ```
 
-**连接延迟**（多机/远程 DSN 时先测，别等 AiiDA 超时才发现网络不对）：
+**Connection latency** (test it first with multi-machine/remote DSN; don't wait for an AiiDA timeout to discover the network is wrong):
 
 ```bash
 time psql -h 127.0.0.1 -p 5433 -U aiida_user -d aiida_db -c "\q"
 ```
 
-**开机/激活即起**：把三条命令写进 conda 的 `activate.d`，`conda activate aiida` 时自动执行：
+**Start on boot/activation**: put the three commands into conda's `activate.d`, so they run automatically on `conda activate aiida`:
 
 ```bash
 mkdir -p "$CONDA_PREFIX/etc/conda/activate.d"
@@ -118,12 +118,12 @@ verdi daemon status >/dev/null 2>&1 || verdi daemon start 2>/dev/null || true
 SH
 ```
 
-> 时区：库时区设成 `Asia/Shanghai`（或 `Etc/GMT-8`）后，`verdi process list` 的
-> ctime/mtime 才和本地一致；不改的话默认 UTC，容易把"晚了 8 小时"当成故障。
+> Time zone: only after the database time zone is set to `Asia/Shanghai` (or `Etc/GMT-8`) do
+> the ctime/mtime in `verdi process list` match local time; otherwise the default is UTC, and it is easy to mistake "8 hours late" for a fault.
 
-## 2.3 computer：提交到哪
+## 2.3 computer: where to submit
 
-先确认 ssh 能通：
+First confirm that ssh works:
 
 ```bash
 ssh <host> whoami
@@ -145,16 +145,16 @@ verdi computer configure core.ssh_async <cluster> -n \
   --host <host> --backend asyncssh --safe-interval 5.0 \
   --no-use-login-shell --max-io-allowed 8
 
-verdi computer test <cluster>   # 必须全绿
+verdi computer test <cluster>   # must be all green
 ```
 
-要点：
+Key points:
 
-- `work-dir` 是集群上 AiiDA 的临时目录，要可写；
-- `mpirun-command` 里的 `{tot_num_mpiprocs}` 由每次提交的 `resources` 决定；
-- 登录节点资源有限，`computer test` 只测 ssh 和文件读写，不测计算。
+- `work-dir` is AiiDA's scratch directory on the cluster and must be writable;
+- `{tot_num_mpiprocs}` in `mpirun-command` is determined by the `resources` of each submission;
+- login nodes have limited resources, so `computer test` only tests ssh and file read/write, not computation.
 
-## 2.4 code：跑哪个可执行文件
+## 2.4 code: which executable to run
 
 ```bash
 verdi code create core.code.installed \
@@ -168,20 +168,20 @@ module load gcc/12.1.0
 ' --use-double-quotes --with-mpi --non-interactive
 ```
 
-- `--default-calc-job-plugin` 决定这个 code 交给哪个插件的 CalcJob；
-- `--prepend-text` 里放 `module load` / `source spack`，每个作业开头执行；
-- `--with-mpi` 与 `mpirun-command` 配合；单核作业把 `resources` 设成 1 即可。
+- `--default-calc-job-plugin` decides which plugin's CalcJob this code is handed to;
+- put `module load` / `source spack` in `--prepend-text`; it runs at the start of every job;
+- `--with-mpi` works together with `mpirun-command`; for a single-core job just set `resources` to 1.
 
-**注意**：scheduler 机器上，`metadata.options` 必须带 `queue_name`，
-否则 `sbatch` 报 `No partition specified or system default partition`。
+**Note**: on a machine with a scheduler, `metadata.options` must carry `queue_name`,
+otherwise `sbatch` reports `No partition specified or system default partition`.
 
-## 2.5 赝势 / 轨道
+## 2.5 Pseudopotentials / orbitals
 
 ```bash
-# 通用：SSSP
+# general: SSSP
 aiida-pseudo install sssp -v 1.3 -x PBE -p precision
 
-# ABACUS：UPF + 数值原子轨道家族
+# ABACUS: UPF + numerical atomic orbital families
 aiida-pseudo install family /path/to/upf/*.UPF <family-name> -x PBE
 aiida-pseudo install family /path/to/orbital/*.orb <family-name> -x PBE
 ```
@@ -191,15 +191,15 @@ aiida-pseudo install family /path/to/orbital/*.orb <family-name> -x PBE
 ```bash
 verdi daemon start
 verdi daemon status
-verdi status           # 全绿：version / config / profile / storage / broker / daemon
+verdi status           # all green: version / config / profile / storage / broker / daemon
 ```
 
-改了已安装插件的源码后必须 `verdi daemon restart`（daemon 持有旧模块）。
+After changing the source of an installed plugin you must run `verdi daemon restart` (the daemon holds the old modules).
 
-## 2.7 自检
+## 2.7 Self-check
 
 ```bash
-python install/06-doctor.py            # 人读报告
-python install/06-doctor.py --json     # 机器可读
-python install/06-doctor.py --strict   # 环境不在 versions.yaml 支持范围时退出码非 0
+python install/06-doctor.py            # human-readable report
+python install/06-doctor.py --json     # machine-readable
+python install/06-doctor.py --strict   # non-zero exit code if the environment falls outside the range supported by versions.yaml
 ```

@@ -3,19 +3,19 @@ verified: 2026-11
 applies_to: "aiida-core>=2.6,<3"
 ---
 
-# verdi 速查
+# verdi quick reference
 
-## 环境
+## Environment
 
 ```bash
 verdi status                     # version/config/profile/storage/broker/daemon
 verdi profile list
 verdi profile setdefault <name>
 verdi daemon start|stop|restart|status
-verdi daemon incr 2              # 增加 worker
+verdi daemon incr 2              # add a worker
 ```
 
-## 配置
+## Configuration
 
 ```bash
 verdi computer setup --label ... --hostname ...
@@ -28,17 +28,17 @@ verdi code show <label>
 verdi code list
 ```
 
-## 插件
+## Plugins
 
 ```bash
 verdi plugin list aiida.workflows
-verdi plugin list aiida.workflows <entry_point>     # 端口
+verdi plugin list aiida.workflows <entry_point>     # ports
 verdi plugin list aiida.calculations
 verdi plugin list aiida.calculations <entry_point>
 verdi plugin list aiida.parsers
 ```
 
-## 进程
+## Processes
 
 ```bash
 verdi process list -a
@@ -47,10 +47,10 @@ verdi process show <pk>
 verdi process status <pk>
 verdi process report <pk>
 verdi process kill <pk>
-verdi process play <paused-pk>     # 仅当输入已修好
+verdi process play <paused-pk>     # only if the inputs are already fixed
 ```
 
-## 节点与数据
+## Nodes and data
 
 ```bash
 verdi node show <pk>
@@ -59,7 +59,7 @@ verdi node repo ls <pk>
 verdi calcjob gotocomputer <pk>
 ```
 
-## 数据管理
+## Data management
 
 ```bash
 verdi archive create out.aiida --groups <group>
@@ -68,7 +68,7 @@ verdi group list
 verdi group show <group>
 ```
 
-## Python 里常用的几行
+## A few common lines in Python
 
 ```python
 from aiida import load_profile
@@ -79,38 +79,38 @@ from aiida.plugins import WorkflowFactory, CalculationFactory
 from aiida.engine import submit, run_get_node
 ```
 
-## 2.x 与旧文档的命令差异（照着旧教程敲会报错）
+## Command differences between 2.x and old docs (following old tutorials will fail)
 
-| 旧写法（1.x） | 现在（2.x） |
+| Old form (1.x) | Current (2.x) |
 |---|---|
 | `verdi code setup` | `verdi code create core.code.installed ...` |
 | `verdi profile set-default X` | `verdi profile setdefault X` |
 | `verdi calcjobs gotocomputer` | `verdi calcjob gotocomputer` |
-| `reentry scan` | 一般不需要（2.x 自动发现 entry points） |
-| `verdi computer setup`（交互式） | `verdi computer setup --non-interactive ...` |
-| `%load_ext aiida.ipython` | `%load_ext aiida`（模块名就是 `aiida`） |
+| `reentry scan` | Usually unnecessary (2.x discovers entry points automatically) |
+| `verdi computer setup` (interactive) | `verdi computer setup --non-interactive ...` |
+| `%load_ext aiida.ipython` | `%load_ext aiida` (the module name is simply `aiida`) |
 
-## 卡住 / 僵尸进程
+## Stuck / zombie processes
 
 ```bash
 verdi daemon stop
-verdi process repair          # 把 broker 里没有 task 的活跃进程标记为失败
+verdi process repair          # mark active processes with no task in the broker as failed
 verdi daemon start
 ```
 
-## 调试与日志
+## Debugging and logs
 
 ```bash
 verdi daemon logshow
-verdi config set logging.aiida_loglevel DEBUG     # 对新进程生效
+verdi config set logging.aiida_loglevel DEBUG     # takes effect for new processes
 verdi config unset logging.aiida_loglevel
 ```
 
-## 缓存
+## Caching
 
 ```bash
-verdi config set caching.default_enabled True     # 同输入的计算直接复用
-verdi process show <pk>                           # 看 cached_from
+verdi config set caching.default_enabled True     # calculations with identical inputs are reused directly
+verdi process show <pk>                           # check cached_from
 ```
 
 ## Jupyter
@@ -122,7 +122,7 @@ verdi process show <pk>                           # 看 cached_from
 %verdi process report <pk>
 ```
 
-## 归档的 Python API（2.x 签名）
+## Archiving Python API (2.x signature)
 
 ```python
 from aiida.tools.archive import create_archive

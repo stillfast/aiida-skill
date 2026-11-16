@@ -34,14 +34,16 @@ generated: true
 generated_by: troubleshooting/regen_exit_codes.py
 ---
 
-# Exit code 速查
+# Exit-code reference
 
-> 本文件的「代码 / 名称 / 消息」列由 `regen_exit_codes.py` 从已安装插件源码生成，
-> 「典型原因 / 处置」列来自人工维护的 `exit-codes.notes.yaml`。
-> 升级插件后运行 `python troubleshooting/regen_exit_codes.py` 重新生成。
+> The "code / name / message" columns are generated from the installed plugin
+> sources; the "typical cause / fix" column comes from the hand-written
+> `exit-codes.notes.yaml`. Re-run `python troubleshooting/regen_exit_codes.py`
+> after upgrading a plugin.
 
-排查顺序：先 `verdi process show <pk>` 看是哪一层（CalcJob 还是 WorkChain）的 exit code，
-再回到本表；**同一个数字在不同插件里含义不同**（例如 700 在 VASP CalcJob 与 VASP WorkChain 里不一样）。
+Read the exit code together with `verdi process show <pk>`: the same number means
+different things in different plugins (e.g. 700 in the VASP CalcJob vs the VASP
+WorkChain), and a WorkChain exit code usually just points at a failed child.
 """
 
 
@@ -86,7 +88,7 @@ def render(rows: dict[str, list[dict]], notes: dict) -> str:
     lines = [HEADER]
     for title, entries in rows.items():
         lines.append(f"\n## {title}\n")
-        lines.append("| code | name | message | 典型原因 / 处置 |")
+        lines.append("| code | name | message | typical cause / fix |")
         lines.append("| --- | --- | --- | --- |")
         for entry in entries:
             note = (notes.get(title) or {}).get(entry["code"]) or {}

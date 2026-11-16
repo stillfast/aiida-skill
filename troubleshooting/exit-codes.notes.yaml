@@ -3,128 +3,128 @@
 
 "ABACUS CalcJob":
   "300":
-    cause: "缺输出文件"
-    fix: "看 retrieved 里少了哪个文件，通常是作业在写结果前就死了"
+    cause: "missing output files"
+    fix: "check which file is absent from retrieved; usually the job died before writing results"
   "301":
-    cause: "'Total Time' 缺失 = 作业没跑完就被杀（墙钟、OOM、MPI/UCX 超时）"
-    fix: "先看 _scheduler-stderr.txt 与 sacct；调大 max_wallclock_seconds、降并行度或改混合参数"
+    cause: "'Total Time' missing = the job did not finish (wall clock, OOM, MPI/UCX failure)"
+    fix: "read _scheduler-stderr.txt and sacct; raise max_wallclock_seconds, lower the process count, or fix the mixing"
   "302":
-    cause: "SCF 未收敛（跑满 scf_nmax）"
-    fix: "看 running_scf.log 的 DRHO 列；金属/5f 体系用 broyden + mixing_beta 0.2 + mixing_ndim 20~24 + mixing_gg0 1.5"
+    cause: "SCF did not converge within scf_nmax"
+    fix: "look at the DRHO column; for metals / 5f systems use broyden + mixing_beta 0.2 + mixing_ndim 20-24 + mixing_gg0 1.5"
   "303":
-    cause: "离子步未收敛（跑满 relax_nmax）"
-    fix: "调大 max_ionic_steps；或让 WorkChain 从最新结构续算"
+    cause: "ionic relaxation ran out of steps"
+    fix: "raise max_ionic_steps, or let the WorkChain restart from the latest structure"
   "410":
-    cause: "SCF 未在限定步数内收敛"
-    fix: "同 302"
+    cause: "SCF did not converge within the allowed number of steps"
+    fix: "same as 302"
   "501":
-    cause: "离子步收敛但最后一步 SCF 未收敛"
-    fix: "收紧 scf_thr 或改用更稳的混合；检查弛豫末步的电子步"
+    cause: "ionic loop converged but the final SCF did not"
+    fix: "tighten the mixing or the final SCF settings; inspect the last electronic loop"
 
 "ABACUS base WorkChain":
   "201":
-    cause: "未指定 `abacus.structure`"
-    fix: "补结构输入"
+    cause: "no `abacus.structure` input"
+    fix: "provide the structure"
   "202":
-    cause: "既没有 kpoints 也没有 kpoints_distance"
-    fix: "给其中任意一个（常用 kpoints_distance，单位 1/Å）"
+    cause: "neither kpoints nor kpoints_distance given"
+    fix: "provide one of them (kpoints_distance is in 1/Angstrom)"
   "300":
-    cause: "子作业失败且未能自动处理"
-    fix: "往上翻日志看真正的子作业 exit code"
+    cause: "child calculation failed and no handler recovered"
+    fix: "look further down the log for the real child exit code"
   "310":
-    cause: "已知的不可恢复错误"
-    fix: "看 report 里的 handler 消息"
+    cause: "known unrecoverable error"
+    fix: "read the handler message in `verdi process report`"
   "501":
-    cause: "离子收敛但 final SCF 超阈值"
-    fix: "同 CalcJob 501"
+    cause: "ionic convergence reached but the final SCF exceeded thresholds"
+    fix: "same as CalcJob 501"
   "710":
-    cause: "电子步未收敛但 `scf_must_converge=False`（仅警告）"
-    fix: "确认是否接受未收敛的能量"
+    cause: "electronic loop not converged but `scf_must_converge=False` (warning only)"
+    fix: "decide whether an unconverged energy is acceptable"
 
 "ABACUS relax WorkChain":
   "401":
-    cause: "relax 子流程失败"
-    fix: "看子 base WorkChain 的 exit code"
+    cause: "the relax sub-workflow failed"
+    fix: "check the child base WorkChain exit code"
   "402":
-    cause: "final SCF 子流程失败"
-    fix: "通常是 final SCF 的 SCF 不收敛 / 被墙钟杀"
+    cause: "the final SCF sub-workflow failed"
+    fix: "usually SCF non-convergence or a wall-clock kill in the final SCF"
 
 "ABACUS band WorkChain":
   "601":
-    cause: "bands 子流程失败"
-    fix: "看 bands CalcJob 的 exit code 与检索文件"
+    cause: "the bands sub-workflow failed"
+    fix: "check the bands CalcJob exit code and its retrieved files"
   "602":
-    cause: "DOS 子流程失败"
-    fix: "同 601"
+    cause: "the DOS sub-workflow failed"
+    fix: "same as 601"
   "603":
-    cause: "SCF 失败"
-    fix: "同 601"
+    cause: "the SCF failed"
+    fix: "same as 601"
   "604":
-    cause: "relax 失败"
-    fix: "同 601"
+    cause: "the relax failed"
+    fix: "same as 601"
 
 "VASP CalcJob":
   "333":
-    cause: "VASP 没真正执行（无任何输出）"
-    fix: "检查 code 路径、prepend-text 的 module/spack、`srun` 与 MPI"
+    cause: "VASP produced no output at all (it probably never ran)"
+    fix: "check the code path, the module/spack lines in prepend-text, and srun/MPI"
   "350":
-    cause: "取回文件夹缺失"
-    fix: "看 scheduler 日志；通常是作业被杀或 retrieve 列表配置错误"
+    cause: "retrieved folder missing"
+    fix: "check the scheduler log; usually the job was killed or the retrieve list is wrong"
   "700":
-    cause: "计算没有跑到结束（ZBRENT、电子步失败、被杀）"
-    fix: "看 OUTCAR 末尾与 vasp.out；ISIF=5/6/7 的 Brent 在噪声 E(V) 上容易失败，改用 ISIF=3"
+    cause: "calculation did not reach the end (ZBRENT, electronic failure, killed)"
+    fix: "read the end of OUTCAR and vasp.out; ISIF=5/6/7 Brent line search is fragile on noisy E(V) - switch to ISIF=3"
   "701":
-    cause: "电子结构未收敛"
-    fix: "调 NELM/ALGO/混合；金属用 ISMEAR=1/-5"
+    cause: "electronic structure not converged"
+    fix: "adjust NELM/ALGO/mixing; metals need ISMEAR=1 or -5"
   "702":
-    cause: "离子弛豫未收敛"
-    fix: "调大 NSW，或检查力判据 EDIFFG"
+    cause: "ionic relaxation not converged"
+    fix: "raise NSW or check the force criterion EDIFFG"
   "703":
-    cause: "VASP 报出 critical error"
-    fix: "按 message 查 VASP 文档（常见：NaN、ZBRENT、内存不足）"
+    cause: "VASP reported a critical error"
+    fix: "follow the message (common: NaN, ZBRENT, out of memory)"
   "704":
-    cause: "诊断输出缺失（未解析 run_status/notifications）"
-    fix: "在 parser_settings 里打开相应输出"
+    cause: "diagnosis outputs missing (run_status / notifications not parsed)"
+    fix: "request them in parser_settings"
 
 "VASP v2 WorkChain":
   "300":
-    cause: "restart 循环里缺必需输出"
-    fix: "看子 CalcJob 的状态与 parser_settings"
+    cause: "required output missing inside the restart loop"
+    fix: "check the child CalcJob state and parser_settings"
   "401":
-    cause: "超过最大迭代次数（重试耗尽）"
-    fix: "看 report 里最后一次失败原因；必要时提高 max_iterations"
+    cause: "maximum number of iterations exceeded (retries exhausted)"
+    fix: "read the last failure in the report; raise max_iterations if appropriate"
   "404":
-    cause: "连续两次提交失败"
-    fix: "几乎总是配置问题（分区、code、ssh），先 `verdi computer test`"
+    cause: "two consecutive submission failures"
+    fix: "almost always configuration (partition, code, ssh); run `verdi computer test` first"
   "500":
-    cause: "缺关键输出，无法判断状态"
-    fix: "检查 retrieve 列表"
+    cause: "critical output missing, state cannot be judged"
+    fix: "check the retrieve list"
   "501":
-    cause: "需要人工改输入"
-    fix: "按 message 调整 INCAR/POSCAR"
+    cause: "manual input change needed"
+    fix: "adjust INCAR/POSCAR as the message says"
   "502":
-    cause: "上一次计算没有跑到结束"
-    fix: "同 CalcJob 700"
+    cause: "the last calculation did not reach the end"
+    fix: "same as CalcJob 700"
   "503":
-    cause: "电子结构未收敛"
-    fix: "同 CalcJob 701"
+    cause: "electronic structure not converged"
+    fix: "same as CalcJob 701"
   "504":
-    cause: "离子弛豫未收敛"
-    fix: "调大 NSW 或放宽 EDIFFG"
+    cause: "ionic relaxation not converged"
+    fix: "raise NSW or loosen EDIFFG"
   "505":
-    cause: "弛豫过程中某一步电子步未收敛"
-    fix: "先解决电子步收敛，再谈离子步"
+    cause: "at least one electronic step during the relaxation did not converge"
+    fix: "fix electronic convergence before worrying about the ions"
   "700":
-    cause: "没给 potential_family"
-    fix: "补 `potential_family` 输入"
+    cause: "no potential_family given"
+    fix: "supply `potential_family`"
   "702":
-    cause: "赝势不存在"
-    fix: "检查 `potential_mapping` 与已安装家族"
+    cause: "potential does not exist"
+    fix: "check `potential_mapping` against the installed families"
 
 "VASP v2 relax WorkChain":
   "600":
-    cause: "弛豫在最大迭代次数内未收敛"
-    fix: "调大 max_iterations / NSW；或换更稳的 ISIF"
+    cause: "relaxation did not converge within max_iterations"
+    fix: "raise max_iterations / NSW, or use a more robust ISIF"
   "601":
-    cause: "最终单点残余力上升（可能收敛到不同电子解）"
-    fix: "属于警告：检查最终结构/能量是否可用，必要时重跑单点"
+    cause: "final single point has increased residual forces (may have converged to a different electronic solution)"
+    fix: "warning only: check the final structure/energy, rerun the single point if needed"

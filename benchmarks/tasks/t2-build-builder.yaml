@@ -1,38 +1,38 @@
 id: t2-build-builder
-title: "写一个 abacus 的 Si 单点 SCF builder"
+title: "Build a single-point SCF builder for Si with abacus"
 weight_total: 12
 checks:
-  - name: "入口点是真实的 abacus entry point（abacus.base 或 abacus.abacus，不是裸 'abacus'）"
+  - name: "a real abacus entry point (abacus.base or abacus.abacus, not bare 'abacus')"
     weight: 3
     any:
       - "abacus\\.base"
       - "abacus\\.abacus"
       - "WorkflowFactory\\(['\\\"]abacus"
       - "CalculationFactory\\(['\\\"]abacus\\.abacus"
-  - name: "structure/code/parameters 挂在合法位置（WorkChain 的 abacus 命名空间，或 CalcJob 的顶层）"
+  - name: "structure/code/parameters attached at a valid place (WorkChain abacus namespace or CalcJob top level)"
     weight: 2
     any:
       - "builder\\.abacus\\.(structure|code|parameters)"
       - "builder\\.(structure|code|parameters)\\s*="
-  - name: "k 点：kpoints_distance 或 kpoints（mesh）"
+  - name: "k-points: kpoints_distance or a kpoints mesh"
     weight: 2
     any:
       - "kpoints_distance"
       - "kpoints"
-  - name: "赝势/轨道：pseudo_family 家族，或 pseudos 命名空间"
+  - name: "pseudos: a pseudo_family family or the pseudos namespace"
     weight: 2
     any:
       - "pseudo_family"
       - "AtomicOrbitalFamily"
       - "pseudos"
-  - name: "调度参数：metadata.options（WorkChain 里是 abacus.metadata.options）"
+  - name: "scheduler options: metadata.options (abacus.metadata.options on a WorkChain)"
     weight: 2
     any:
       - "metadata\\.options"
-  - name: "明确说明不提交 / 只构建"
+  - name: "states explicitly that nothing is submitted"
     weight: 1
     any:
       - "(不提交|不运行|not submit|do not submit|只构建)"
 must_not:
-  - name: "不要用不存在的入口点 CalculationFactory('abacus')"
+  - name: "must not use the non-existent entry point CalculationFactory('abacus')"
     pattern: "CalculationFactory\\(['\\\"]abacus['\\\"]\\)"

@@ -3,79 +3,79 @@ verified: 2026-11
 applies_to: "aiida-core>=2.6,<3"
 ---
 
-# 1. AiiDA 是什么，配合什么使用
+# 1. What AiiDA Is, and What It Is Used With
 
-## 1.1 定义
+## 1.1 Definition
 
-AiiDA 是一个**面向计算科学的工作流引擎 + 溯源数据库**。它不做 DFT，做的是：
+AiiDA is a **workflow engine + provenance database for computational science**. It does not do DFT; what it does is:
 
-| 能力 | 传统做法 | AiiDA 的做法 |
+| Capability | Traditional approach | AiiDA approach |
 |---|---|---|
-| 提交 | 手写 sbatch / 输入文件 | 描述 inputs，由插件生成文件并提交 |
-| 追溯 | 翻目录、看 `history` | 每个输入/输出都是带 UUID 的节点，连成图 |
-| 重试 | 人工发现失败再重来 | WorkChain 里的 handler 按 exit code 自动处理 |
-| 批量 | for 循环写 shell | process 输入是数据节点，可以程序化生成 |
+| Submission | Hand-written sbatch / input files | Describe the inputs; the plugin generates the files and submits |
+| Tracing | Dig through directories, look at `history` | Every input/output is a node with a UUID, linked into a graph |
+| Retry | Manually spot the failure and start over | Handlers in a WorkChain act on exit codes automatically |
+| Batching | Write a shell for loop | Process inputs are data nodes and can be generated programmatically |
 
-设计上的三个关键词：
+Three keywords in the design:
 
-- **Provenance（溯源）**：任何结果都能回答"它由哪些输入、哪个 code、哪次运行产生"。
-- **Reproducibility（可复现）**：节点不可变；换参数 = 新节点，旧记录保留。
-- **Workflow（工作流）**：把"SCF → 弛豫 → 收敛检查 → 重启"这类流程写成可重入的 Process。
+- **Provenance**: any result can answer "which inputs, which code, which run produced it".
+- **Reproducibility**: nodes are immutable; changing a parameter = a new node, and the old record is kept.
+- **Workflow**: flows such as "SCF → relax → convergence check → restart" are written as re-entrant Processes.
 
-## 1.2 组成
+## 1.2 Composition
 
 ```
-aiida-core           引擎（Process 接口、Node 模型、verdi CLI）+ 存储后端
-  ├── PostgreSQL     主数据库（节点元数据、链接）——生产用
-  ├── SQLite         轻量后端（单机练手）
-  ├── RabbitMQ       进程间通信，daemon 依赖它
-  ├── 文件仓库       大对象（结构、取回的文件）落盘，数据库只存哈希
-  └── daemon         后台 worker，真正执行和轮询调度器的进程
-插件（entry points）  每个代码一个：CalcJob（输入生成 + parser）+ WorkChain（流程）
+aiida-core           engine (Process interface, Node model, verdi CLI) + storage backend
+  ├── PostgreSQL     primary database (node metadata, links) — for production
+  ├── SQLite         lightweight backend (single-machine practice)
+  ├── RabbitMQ       inter-process communication; the daemon depends on it
+  ├── file repository large objects (structures, retrieved files) written to disk; the database stores only hashes
+  └── daemon         background worker; the process that actually executes and polls the scheduler
+Plugins (entry points)  one per code: CalcJob (input generation + parser) + WorkChain (flow)
   ├── aiida-abacus
   ├── aiida-vasp
   ├── aiida-quantumespresso
   └── aiida-fleur
-aiida-common-workflows 跨代码的统一接口（relax / eos / bands … + 协议档）
-脚本层（如 acwf-verification-scripts）批量提交 + 结果分析
+aiida-common-workflows unified interface across codes (relax / eos / bands … + protocol levels)
+Script layer (e.g. acwf-verification-scripts) batch submission + result analysis
 ```
 
-`verdi` 是命令行入口；所有操作最终都落到 "Process" 和 "Node" 两种对象上。
+`verdi` is the command-line entry point; every operation ultimately lands on two kinds of objects, "Process" and "Node".
 
-## 1.3 数据模型（够用就行）
+## 1.3 Data model (just enough)
 
-| 类型 | 例子 | 说明 |
+| Type | Example | Description |
 |---|---|---|
-| **Data** | `StructureData`、`Dict`、`Int`、`FolderData` | 计算的输入/输出，store 之后不可变 |
-| **CalcJob** | `AbacusCalculation`、`VaspCalculation` | 一次真实的外部程序调用；有 `retrieved`（本地文件）、`remote_folder`（集群路径）、`exit_status` |
-| **WorkChain** | `abacus.relax`、`vasp.v2.relax` | 编排多个 CalcJob，可重试、可分支 |
-| **ProcessNode 的 outputs** | `output_parameters`、`misc`、`structure` | 供下游读取 |
+| **Data** | `StructureData`, `Dict`, `Int`, `FolderData` | Calculation inputs/outputs; immutable once stored |
+| **CalcJob** | `AbacusCalculation`, `VaspCalculation` | One real invocation of an external program; has `retrieved` (local files), `remote_folder` (cluster path), `exit_status` |
+| **WorkChain** | `abacus.relax`, `vasp.v2.relax` | Orchestrates multiple CalcJobs; can retry and branch |
+| **outputs of ProcessNode** | `output_parameters`, `misc`, `structure` | Read by downstream steps |
 
-链接（link）把节点连成图。`verdi process show <pk>` 看直接输入输出，
-`verdi node graph generate <pk>`（或 `Graph()`）可以画整张图。
+Links connect nodes into a graph. `verdi process show <pk>` shows the direct inputs and outputs,
+`verdi node graph generate <pk>` (or `Graph()`) can draw the whole graph.
 
-## 1.4 进程状态与 exit code
+## 1.4 Process states and exit codes
 
-- `ProcessState`：`created → waiting → running → finished`（另有 `exited`、`killed`）。
-- `exit_status`：`0` 成功；`None` 还没结束；非 0 的**含义由插件定义**，不是一个统一编号。
-  因此排查时"看 exit code"必须结合**是哪个插件**（见 `04-troubleshooting.md`）。
-- `verdi process report <pk>` 输出该进程的日志；`verdi process status <pk>` 输出子进程树。
+- `ProcessState`: `created → waiting → running → finished` (plus `exited`, `killed`).
+- `exit_status`: `0` for success; `None` if not finished yet; the **meaning of a non-zero value is defined by the plugin**, it is not a unified numbering.
+  So when troubleshooting, "look at the exit code" must be combined with **which plugin** it comes from (see `04-troubleshooting.md`).
+- `verdi process report <pk>` prints the log of that process; `verdi process status <pk>` prints the child process tree.
 
-## 1.5 什么时候不该用 AiiDA
+## 1.5 When not to use AiiDA
 
-- 一次性的、参数固定的单点计算：直接写 sbatch 更快。
-- 需要极低延迟的交互式调试：AiiDA 有 daemon 轮询开销。
-- 团队里没有人愿意维护 profile/computer/code 这套配置。
+- One-off, fixed-parameter single-point calculations: writing sbatch directly is faster.
+- Interactive debugging that needs very low latency: AiiDA has daemon polling overhead.
+- Nobody on the team is willing to maintain the profile/computer/code configuration.
 
-但只要出现"多结构 × 多参数"、"要追溯"、"失败要自动重试"中的任意一条，
-AiiDA 的收益就远大于配置成本。
+But as soon as any one of "many structures × many parameters", "provenance is needed" or "failures must be retried automatically" applies,
+the benefit of AiiDA far outweighs the configuration cost.
 
-## 1.6 生态里的相邻工具
+## 1.6 Adjacent tools in the ecosystem
 
-| 工具 | 作用 |
+| Tool | Purpose |
 |---|---|
-| ASE / pymatgen | 结构构造与转换（`StructureData(ase=atoms)`） |
-| aiida-pseudo | 赝势家族管理（SSSP 等） |
-| aiida-phonopy | 声子后处理 |
-| aiida-common-workflows | 跨代码统一接口，做验证/对比 |
-| aiida-submission-controller | 批量提交控制器（本仓库 `03-usage-scripts.md` 用到） |
+| ASE / pymatgen | Structure construction and conversion (`StructureData(ase=atoms)`) |
+| aiida-pseudo | Pseudopotential family management (SSSP etc.) |
+| aiida-phonopy | Phonon post-processing |
+| aiida-common-workflows | Unified interface across codes, for verification/comparison |
+| aiida-submission-controller | Batch submission controller (used by `03-usage-scripts.md` in this repository) |

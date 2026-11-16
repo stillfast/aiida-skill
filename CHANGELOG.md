@@ -16,6 +16,20 @@ All notable changes to this repository (not to AiiDA itself).
 - DSH installation: the repository is symlinked to `$DSH_HOME/skills/aiida`, so
   the `aiida` skill is discovered automatically and reloads on `git pull`.
 
+## [0.4.0] - 2026-11-16
+
+### Changed
+
+- The whole skill is now in **English**: `SKILL.md`, `SUMMARY.md`, `USAGE.md`,
+  every `references/*.md`, `troubleshooting/` (cases and the generated exit-code
+  table), the benchmark rubrics and `benchmarks/README.md`. `README.md` keeps a
+  Chinese section (`中文说明`) as the human entry point.
+- `troubleshooting/regen_exit_codes.py` now emits an English header and table,
+  so a regenerated `exit-codes.md` stays English.
+- Benchmark rubric *names/titles* are English; the `any:` regexes keep Chinese
+  alternatives because the recorded transcripts are Chinese (documented in
+  `benchmarks/README.md`).
+
 ## [0.3.0] - 2026-11-15
 
 ### Added

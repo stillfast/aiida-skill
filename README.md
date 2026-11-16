@@ -1,88 +1,102 @@
 # aiida-skill
 
-AiiDA 的安装与使用说明，写成「人读的教程 + agent 可加载的 skill」两种形态。
+An AiiDA handbook: **installation, usage and debugging** — written as a
+human-readable guide *and* an agent skill.
 
-- **只想快速理解 AiiDA 怎么用** → 读 [`SUMMARY.md`](SUMMARY.md)（一页，含图）
-- **要装/配/跑** → 从 [`references/02-installation.md`](references/02-installation.md) 开始，脚本在 `install/`
-- **出错了** → [`references/04-troubleshooting.md`](references/04-troubleshooting.md) + `troubleshooting/exit-codes.md`
-- **让 agent 用** → 把本目录放进 skill 搜索路径，入口是 [`SKILL.md`](SKILL.md)
+- **Just want to understand how AiiDA works?** read [`SUMMARY.md`](SUMMARY.md) (one page, with diagrams)
+- **Need to install / configure / run?** start at [`references/02-installation.md`](references/02-installation.md), scripts in `install/`
+- **Something failed?** [`references/04-troubleshooting.md`](references/04-troubleshooting.md) + `troubleshooting/exit-codes.md`
+- **Using it as an agent skill?** put this directory on the skill search path; entry point is [`SKILL.md`](SKILL.md)
+- **Is it actually useful?** see [`benchmarks/results/pilot-2026-11-15.md`](benchmarks/results/pilot-2026-11-15.md)
 
-## 仓库结构
+## Layout
 
 ```
 .
-├── SUMMARY.md                 # 人能看懂的一页总结（建议先读）
-├── SKILL.md                   # agent 入口：触发条件 + SOP + 红线
-├── references/                # 四部分正文
+├── SKILL.md                   # agent entry: when to use, SOP, red lines
+├── SUMMARY.md                 # one-page mental model (read this first)
+├── USAGE.md                   # how to use the skill day to day
+├── references/                # the four parts + two handbooks
 │   ├── 01-what-is-aiida.md
 │   ├── 02-installation.md
 │   ├── 03-usage-workflow.md
 │   ├── 03-usage-scripts.md
 │   ├── 04-troubleshooting.md
-│   ├── 05-workchain-recipes.md      # 自己写 WorkChain 的骨架
-│   ├── 06-node-queries.md           # 读结果 / 排障查询手册
+│   ├── 05-workchain-recipes.md     # writing your own WorkChain
+│   ├── 06-node-queries.md          # reading results / debugging queries
 │   └── verdi-cheatsheet.md
-├── install/                   # 可执行安装脚本（profile/computer/code/pseudo/doctor）
-│   └── config.env.yeesuan.example  # 真实集群（ABACUS+VASP+QE）的脱敏配置
+├── install/                   # runnable setup scripts + doctor + upstream checker
+│   └── config.env.yeesuan.example  # sanitized real-cluster config (ABACUS+VASP+QE)
 ├── examples/
-│   ├── si-scf/                # 最小例子：单点 SCF（构建 → 校验 → 提交 → 分析）
-│   └── eos-scan/              # 两层例子：workflow.py（描述）→ submit.py / analyze.py
-├── troubleshooting/           # exit code 表 + 结构化案例
-├── benchmarks/                # skill 有效性 A/B 评测（rubric + 打分器 + 结果）
-│   └── results/pilot-2026-11-15.md
-├── versions.yaml              # 这套流程验证过的版本组合
+│   ├── si-scf/                # minimal: single point (build → validate → submit → analyse)
+│   └── eos-scan/              # two layers: workflow.py → submit.py / analyze.py
+├── troubleshooting/           # exit-code table (generated) + structured case studies
+├── benchmarks/                # skill-effectiveness A/B harness and results
+├── versions.yaml              # the version combination this guide was verified against
 └── CHANGELOG.md / CONTRIBUTING.md
 ```
 
-## 快速开始
+## Quick start
 
 ```bash
 git clone https://github.com/stillfast/aiida-skill.git
 cd aiida-skill
 
-cp install/config.env.example install/config.env   # 填集群/账号/路径
-bash install/01-env.sh                            # conda env + aiida-core + 插件
-bash install/02-profile.sh                        # profile
-bash install/03-computer.sh                       # computer
-bash install/04-code.sh                           # code
-bash install/05-pseudo.sh                         # 赝势/轨道
-python install/06-doctor.py                       # 自检，全绿再开始算
+cp install/config.env.example install/config.env   # cluster, account, paths
+bash install/01-env.sh                             # conda env + aiida-core + plugins
+bash install/02-profile.sh                         # profile
+bash install/03-computer.sh                        # computer
+bash install/04-code.sh                            # code
+bash install/05-pseudo.sh                          # pseudopotentials
+python install/06-doctor.py                        # self-check: all green before computing
 ```
 
-然后跑第一个例子：
+Then run the first example:
 
 ```bash
 cd examples/si-scf
-python submit.py --dry-run     # 只构建并校验输入，不提交
-python submit.py               # 提交
-python analyze.py <pk>         # 读结果
+python submit.py --dry-run     # build and validate only, nothing submitted
+python submit.py               # submit
+python analyze.py <pk>         # read the result
 ```
 
-完整的两层例子（先 workflow 再 scripts）：
+The two-layer example (workflow first, scripts second):
 
 ```bash
 cd examples/eos-scan
-python workflow.py --dry-run                              # 只描述计算，不提交
-python submit.py --code qe@mycluster --element U          # 提交 EOS 扫描
-python analyze.py <pk> --json eos.json                    # 读结果 + Birch-Murnaghan 拟合
+python workflow.py --dry-run                              # describe only
+python submit.py --code qe@mycluster --element U          # submit an EOS scan
+python analyze.py <pk> --json eos.json                    # read + Birch-Murnaghan fit
 ```
 
-## 这个 skill 到底有没有用
-
-`benchmarks/` 里有一套可复现的 A/B 评测（5 个任务、三组对照、rubric 打分）。
-最近一次 pilot：纯知识 0.62 / 允许查环境 0.89 / 加 skill 0.91——结论和局限都写在
-[`benchmarks/results/pilot-2026-11-15.md`](benchmarks/results/pilot-2026-11-15.md)。
+## Using it as a skill
 
 ```bash
-python benchmarks/score.py --dir benchmarks/transcripts/skill
-python benchmarks/score.py --a benchmarks/transcripts/baseline_tools \
-    --b benchmarks/transcripts/skill --label-a tools --label-b skill
+ln -sfn "$PWD" "$DSH_HOME/skills/aiida"    # DSH picks it up live
 ```
 
-## 维护
+Then ask in natural language ("relax this structure with VASP", "why did 574597
+fail"); the agent runs `install/06-doctor.py` first and follows the SOP in
+`SKILL.md`. `git pull` is enough to update it — no reinstall, no restart.
 
-见 [`CONTRIBUTING.md`](CONTRIBUTING.md)：版本矩阵、CI 漂移检测、把真实故障写成 case YAML。
+## Maintenance
 
-## 许可
+See [`CONTRIBUTING.md`](CONTRIBUTING.md): the version matrix, the weekly drift
+workflow, executable documentation, and turning every real failure into a case
+YAML.
+
+## Chinese quick note / 中文说明
+
+这个仓库是 AiiDA 的安装与使用手册，同时也是 DSH/Claude 可加载的 skill。
+正文（`SKILL.md`、`SUMMARY.md`、`USAGE.md`、`references/`、`troubleshooting/`）为英文；
+本 README 保留中文说明。
+
+- 只想快速理解 AiiDA：读 `SUMMARY.md`（一页，带图）
+- 装环境：抄 `install/config.env.yeesuan.example`，改路径/队列，依次跑 `install/0*.sh`
+- 用的时候不用敲命令：把目录链接进 `$DSH_HOME/skills/aiida`，在对话里直接说需求
+- 它到底有没有用：见 `benchmarks/results/pilot-2026-11-15.md`（分三组对照，含局限）
+- 更新：`cd ~/work/aiida-skill && git pull`
+
+## License
 
 MIT

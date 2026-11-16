@@ -3,32 +3,32 @@ verified: 2026-11
 applies_to: "aiida-core>=2.6,<3"
 ---
 
-# 3A. 使用（一）：先写 workflow
+# 3A. Usage (1): write the workflow first
 
-workflow 层回答一个问题：**"一次计算由哪些步骤组成，失败了怎么办？"**
-这一层不需要你写代码——插件已经把 WorkChain 写好了；你要做的是
-**选对 WorkChain、填对输入、先 dry-run 再提交**。
+The workflow layer answers one question: **"What steps does a single calculation consist of, and what happens if they fail?"**
+This layer does not require you to write code — the plugin has already written the WorkChain; what you need to do is
+**pick the right WorkChain, fill in the inputs correctly, and dry-run before submitting**.
 
-## 3.1 找到可用的 WorkChain
+## 3.1 Find an available WorkChain
 
 ```bash
-verdi plugin list aiida.workflows              # 列出了哪些工作流
-verdi plugin list aiida.workflows abacus.relax # 看它的输入/输出端口
-verdi plugin list aiida.calculations           # 底层 CalcJob
+verdi plugin list aiida.workflows              # which workflows are registered
+verdi plugin list aiida.workflows abacus.relax # inspect its input/output ports
+verdi plugin list aiida.calculations           # the underlying CalcJob
 ```
 
-常见入口：
+Common entry points:
 
-| 需求 | 单代码 WorkChain | 统一接口（common-workflows） |
+| Requirement | Single-code WorkChain | Unified interface (common-workflows) |
 |---|---|---|
-| 单点 SCF | `abacus.base` / `vasp.v2.vasp` | — |
-| 结构弛豫 | `abacus.relax` / `vasp.v2.relax` | `common_workflows.relax` |
-| 状态方程 | — | `common_workflows.eos` |
-| 能带/DOS | 插件自带 | — |
+| Single-point SCF | `abacus.base` / `vasp.v2.vasp` | — |
+| Structure relaxation | `abacus.relax` / `vasp.v2.relax` | `common_workflows.relax` |
+| Equation of state | — | `common_workflows.eos` |
+| Band/DOS | built into the plugin | — |
 
-## 3.2 用 builder 构建输入
+## 3.2 Build inputs with the builder
 
-`builder` 是 AiiDA 的输入容器，端口名从插件 spec 来，不会拼错：
+`builder` is AiiDA's input container; port names come from the plugin spec, so you cannot misspell them:
 
 ```python
 from aiida.plugins import WorkflowFactory
@@ -52,13 +52,13 @@ builder.metadata.options = {
 }
 ```
 
-**不要**手写 `inputs` 字典：端口名、嵌套命名空间、metadata 的位置都容易错，
-而且错的位置不同表现各异（有的是 submit 时报错，有的是作业跑起来才发现）。
+**Do not** hand-write the `inputs` dict: port names, nested namespaces and the placement of metadata are all easy to get wrong,
+and different mistakes show up in different ways (some fail at submit time, others are only discovered once the job is running).
 
-## 3.3 用协议档（protocol）省事
+## 3.3 Save effort with protocol levels
 
-插件提供 `get_builder_from_protocol(...)`，用 `fast / moderate / precise`
-三档预设替代逐项填参：
+Plugins provide `get_builder_from_protocol(...)`, whose three presets `fast / moderate / precise`
+replace filling in parameters one by one:
 
 ```python
 builder = WorkChain.get_builder_from_protocol(
@@ -69,13 +69,13 @@ builder = WorkChain.get_builder_from_protocol(
 )
 ```
 
-common-workflows 的接口同理，且可以跨代码切换：
+The common-workflows interface works the same way, and you can switch codes:
 
 ```python
 from aiida_common_workflows.plugins import load_workflow_entry_point
 from aiida_common_workflows.common import RelaxType, ElectronicType
 
-WorkChain = load_workflow_entry_point('relax', 'vasp')     # 或 quantum_espresso / fleur ...
+WorkChain = load_workflow_entry_point('relax', 'vasp')     # or quantum_espresso / fleur ...
 builder = WorkChain.get_input_generator().get_builder(
     structure, engines={'relax': {'code': code, 'options': options}},
     protocol='fast', relax_type=RelaxType.POSITIONS_CELL,
@@ -83,32 +83,32 @@ builder = WorkChain.get_input_generator().get_builder(
 )
 ```
 
-同一组参数换后端只改一个字符串，这就是"验证不同代码"的基础。
+Switching backends with the same set of parameters changes only one string — this is the basis for "validating different codes".
 
-> 目前 aiida-common-workflows 注册的 relax 后端是 abinit / bigdft / castep / cp2k /
-> fleur / gaussian / gpaw / nwchem / orca / quantum_espresso / siesta / vasp / wien2k，
-> **没有 ABACUS**。ABACUS 请直接用 `abacus.base` / `abacus.relax` 这类插件原生 WorkChain。
-> 用 `verdi plugin list aiida.workflows | grep common_workflows` 确认本机实际注册了哪些。
+> Currently the relax backends registered by aiida-common-workflows are abinit / bigdft / castep / cp2k /
+> fleur / gaussian / gpaw / nwchem / orca / quantum_espresso / siesta / vasp / wien2k,
+> with **no ABACUS**. For ABACUS use plugin-native WorkChains such as `abacus.base` / `abacus.relax`.
+> Use `verdi plugin list aiida.workflows | grep common_workflows` to confirm what is actually registered on this machine.
 
-## 3.4 提交前必须做的检查
+## 3.4 Checks you must do before submitting
 
 ```python
-# 1) 校验端口
+# 1) validate the ports
 err = builder._process_class.spec().inputs.validate(builder._inputs(prune=True))
 assert err is None, err
 
-# 2) 打印真正会生效的调度参数
+# 2) print the scheduler parameters that will actually take effect
 opts = builder.metadata.options
 print(opts.get('queue_name'), opts.get('max_wallclock_seconds'), opts.get('resources'))
 
-# 3) 打印真正会生效的物理参数（协议档会覆盖你的默认值）
+# 3) print the physical parameters that will actually take effect (protocol levels override your defaults)
 print(builder.abacus.parameters.get_dict())
 ```
 
-第 2 步是经验之谈：**调度参数丢失是最高频的"静默失败"**，表现是提交时
-`No partition specified`，或者作业用 1 核跑了 20 小时。
+Step 2 is a lesson from experience: **lost scheduler parameters are the most frequent "silent failure"**, showing up as
+`No partition specified` at submit time, or as a job that runs for 20 hours on 1 core.
 
-## 3.5 提交、跟踪、取结果
+## 3.5 Submit, track, retrieve results
 
 ```python
 node = submit(builder)
@@ -116,37 +116,37 @@ print(node.pk, node.uuid)
 ```
 
 ```bash
-verdi process list -a                 # 所有进程
-verdi process show <pk>               # 输入、输出、exit status
-verdi process status <pk>             # 子进程树
-verdi process report <pk>             # 日志（含 handler 的处置）
-verdi process kill <pk>               # 停掉（子进程一起）
+verdi process list -a                 # all processes
+verdi process show <pk>               # inputs, outputs, exit status
+verdi process status <pk>             # process tree
+verdi process report <pk>             # log (including how handlers acted)
+verdi process kill <pk>               # stop it (including child processes)
 ```
 
-结果读取：
+Reading results:
 
 ```python
 node = load_node(pk)
-node.outputs.misc.get_dict()['total_energy']   # 能量
-node.outputs.structure                          # 弛豫后的结构
-node.exit_status, node.exit_message             # 0 + None = 成功
-node.outputs.retrieved.open('OUT.aiida/running_scf.log')  # 原始日志
+node.outputs.misc.get_dict()['total_energy']   # energy
+node.outputs.structure                          # relaxed structure
+node.exit_status, node.exit_message             # 0 + None = success
+node.outputs.retrieved.open('OUT.aiida/running_scf.log')  # raw log
 ```
 
-## 3.6 什么时候该自己写 WorkChain
+## 3.6 When to write your own WorkChain
 
-只有在"现成工作流组合不起来"时才写，例如：多步之间有自定义判据、
-需要跨代码比较、需要批量生成子作业。写的时候遵守三条：
+Write one only when "the existing workflows cannot be combined", for example: custom criteria between individual steps,
+a need to compare across codes, or a need to generate sub-jobs in batches. Follow three rules when writing:
 
-1. `spec.outline` 明确分段，每段可重入；
-2. 用 `exit_code` + `@process_handler` 表达失败策略，而不是 `try/except` 兜底；
-3. 输出用标准 Data 类型（`Dict`、`StructureData`），方便下游脚本消费。
+1. `spec.outline` clearly delineates the stages, each of which is re-entrant;
+2. express the failure policy with `exit_code` + `@process_handler` rather than a `try/except` catch-all;
+3. use standard Data types for outputs (`Dict`, `StructureData`) so downstream scripts can consume them easily.
 
-## 3.7 常见坑
+## 3.7 Common pitfalls
 
-| 现象 | 原因 | 处置 |
+| Symptom | Cause | Action |
 |---|---|---|
-| `Unexpected ports` | 该插件不支持某个 metadata 键 | 查 `verdi plugin list aiida.calculations <name>` |
-| 作业 1 核跑 | `metadata.options` 没传到子 CalcJob | dry-run 打印 options，见 3.4 |
-| daemon 里还是旧代码 | editable 安装改了源码 | `verdi daemon restart` |
-| 端口名对不上 | 插件版本变化 | `verdi plugin list` 为准，不要凭记忆 |
+| `Unexpected ports` | the plugin does not support a certain metadata key | check `verdi plugin list aiida.calculations <name>` |
+| job runs on 1 core | `metadata.options` were not passed to the child CalcJob | dry-run and print options, see 3.4 |
+| the daemon still runs old code | an editable install changed the source | `verdi daemon restart` |
+| port names do not match | the plugin version changed | trust `verdi plugin list`, not memory |

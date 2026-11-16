@@ -17,7 +17,7 @@ skill installed and one without.
 Rubrics are deliberately *fact-based*, not style-based: they check that the
 answer names the right mechanism (`metadata.options`, `queue_name`,
 `get_builder_restart`, `mixing_beta`, `SubmissionController`) and does not assert
-a wrong one (`302 = 墙钟`). This keeps the score reproducible and cheap.
+a wrong one (`302 = wall-clock kill`). This keeps the score reproducible and cheap.
 
 ## Results so far
 
@@ -33,7 +33,7 @@ a wrong one (`302 = 墙钟`). This keeps the score reproducible and cheap.
 
 Both arms get the **same prompt**, are allowed the same tools, and are run in a
 fresh session per task (no conversation carry-over). The baseline prompt adds
-one control sentence: *"仅凭你自己的知识回答，不要读取本地文件或使用预置 skill"*,
+one control sentence: *"Answer from your own knowledge only; do not read local files or use any pre-installed skill."*,
 so that it cannot simply read this repository.
 
 ## Procedure
@@ -67,3 +67,10 @@ skill catalog was really absent in the baseline arm (the check in step 0).
   misses before concluding the skill is bad.
 - **Contamination**: if the baseline agent still knows AiiDA from pretraining, the
   delta measures *extra* guidance, not "knows vs does not know AiiDA".
+
+## A note on the rubrics
+
+The check names and titles are English; the `any:` patterns keep a few Chinese
+alternatives because the recorded transcripts (`transcripts/`) were produced in
+Chinese. Keep both when adding checks, or re-record the transcripts in English
+first.

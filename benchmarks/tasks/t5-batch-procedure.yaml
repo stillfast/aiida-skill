@@ -1,26 +1,26 @@
 id: t5-batch-procedure
-title: "20 个结构的 relax 怎么组织"
+title: "How to organise relaxations for 20 structures"
 weight_total: 10
 checks:
-  - name: "先单跑通一个 workflow，再批量"
+  - name: "run one workflow through first, then batch"
     weight: 3
     any:
       - "(先|first).*(单个|一个|single).*(跑通|验证|test|dry)"
       - "(再|然后|then).*(批量|batch|20)"
-  - name: "用 SubmissionController / 批提交控制器"
+  - name: "uses a SubmissionController (or an explicit batch controller)"
     weight: 2
     any:
       - "SubmissionController|Submission controller|aiida_submission_controller"
-  - name: "去重 / 并发上限 / 断点续跑"
+  - name: "idempotency, concurrency limit, resumability"
     weight: 2
     any:
       - "(去重|unique|extras)"
       - "max_concurrent|并发"
-  - name: "失败按 exit code 分类记录"
+  - name: "classifies failures by exit code"
     weight: 2
     any:
       - "(exit_status|exit code|退出码).*(记录|分类|统计|汇总|巡检)"
-  - name: "分析脚本只读 outputs"
+  - name: "analysis reads outputs only"
     weight: 1
     any:
       - "(只读|read.?only|不修改|不写).*(outputs?|节点)"
